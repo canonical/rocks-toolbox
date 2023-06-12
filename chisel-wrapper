@@ -26,7 +26,7 @@ cleanup() {
 trap cleanup EXIT
 
 print_error() {
-	echo "Error:" "$@" >> /dev/stderr
+	echo "Error:" "$@" >&2
 }
 
 install_slices() {
@@ -54,7 +54,7 @@ prepare_dpkg_status() {
 	done
 }
 
-if [ -z "$CHISEL_DPKG_STATUS_FILE" ] ; then
+if [ -z "${CHISEL_DPKG_STATUS_FILE:-}" ] ; then
 	print_error "please specify the desired path of dpkg status in CHISEL_DPKG_STATUS_FILE"
 	exit 1
 fi
