@@ -1,27 +1,42 @@
 #!/bin/bash
 
-# USAGE:
-#
-#   ./<script> [ chisel-cut-OPTIONS ] <slices..>
-#
-# Installs the slices, using
-#
-#   chisel cut "$@"
-#
-# Generates a status file similar to /var/lib/dpkg/status
-# at the CHISEL_DPKG_STATUS_FILE path.
-#
-# env vars:
-#   CHISEL_BIN                (optional) the path of chisel binary
-#   CHISEL_DPKG_STATUS_FILE   (required) the path where the dpkg status file should be generated
-
 set -eu
 
 CHISEL_BIN="${CHISEL_BIN:-"chisel"}"
+
 CHISEL_CACHE_DIR="$(mktemp -d)"
+CHISEL_DPKG_STATUS_FILE=""
+
+print_usage() {
+	cat <<- EOF
+	Usage: $(basename "$0") [OPTIONS] -- [chisel-cut-OPTIONS] <slice names..>
+
+	This wrapper script performs "chisel cut" operation on specified slices.
+	And if specified in OPTIONS, it performs various tasks such as generating
+	a dpkg status file for the installed file system.
+
+	Every argument after -- will be passed to "chisel cut".
+
+	[OPTIONS]
+
+	  -g, --generate-dpkg-status <path>
+	      Generate a dpkg status file at the specified <path>.
+
+	  -h, --help
+	      Print this help information and quit.
+
+	ENVIRONMENT VARIABLES
+
+	  CHISEL_BIN
+	      Set CHISEL_BIN to the location of the chisel binary.
+	      By default, it will look for "chisel" in PATH.
+	EOF
+}
 
 cleanup() {
-	rm -rf "$CHISEL_CACHE_DIR"
+	if [ -d "$CHISEL_CACHE_DIR" ]; then
+		rm -rf "$CHISEL_CACHE_DIR"
+	fi
 }
 trap cleanup EXIT
 
@@ -54,10 +69,37 @@ prepare_dpkg_status() {
 	done
 }
 
-if [ -z "${CHISEL_DPKG_STATUS_FILE:-}" ] ; then
-	print_error "please specify the desired path of dpkg status in CHISEL_DPKG_STATUS_FILE"
-	exit 1
-fi
+while (( "$#" )); do
+	case "$1" in
+		-g|--generate-dpkg-status)
+			if (( "$#" < 2 )); then
+				print_error "Please specify the desired path of the dpkg status file."
+				exit 1
+			fi
+			CHISEL_DPKG_STATUS_FILE="$2"
+			shift 2
+			;;
+		-h|--help)
+			print_usage
+			exit 0
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			echo "Unknown option: $1"
+			exit 1
+			;;
+		*)
+			echo "Unexpected argument: $1"
+			exit 1
+			;;
+	esac
+done
 
 install_slices "$@"
-prepare_dpkg_status
+
+if [ -n "$CHISEL_DPKG_STATUS_FILE" ]; then
+	prepare_dpkg_status
+fi
