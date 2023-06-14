@@ -19,7 +19,7 @@ print_usage() {
 
 	[OPTIONS]
 
-	  -g, --generate-dpkg-status <path>
+	  --generate-dpkg-status <path>
 	      Generate a dpkg status file at the specified <path>.
 
 	  -h, --help
@@ -71,7 +71,7 @@ prepare_dpkg_status() {
 
 while (( "$#" )); do
 	case "$1" in
-		-g|--generate-dpkg-status)
+		--generate-dpkg-status)
 			if (( "$#" < 2 )); then
 				print_error "Please specify the desired path of the dpkg status file."
 				exit 1
