@@ -1,0 +1,105 @@
+#!/bin/bash
+
+set -eu
+
+CHISEL_BIN="${CHISEL_BIN:-"chisel"}"
+
+CHISEL_CACHE_DIR="$(mktemp -d)"
+CHISEL_DPKG_STATUS_FILE=""
+
+print_usage() {
+	cat <<- EOF
+	Usage: $(basename "$0") [OPTIONS] -- [chisel-cut-OPTIONS] <slice names..>
+
+	This wrapper script performs "chisel cut" operation on specified slices.
+	And if specified in OPTIONS, it performs various tasks such as generating
+	a dpkg status file for the installed file system.
+
+	Every argument after -- will be passed to "chisel cut".
+
+	[OPTIONS]
+
+	  --generate-dpkg-status <path>
+	      Generate a dpkg status file at the specified <path>.
+
+	  -h, --help
+	      Print this help information and quit.
+
+	ENVIRONMENT VARIABLES
+
+	  CHISEL_BIN
+	      Set CHISEL_BIN to the location of the chisel binary.
+	      By default, it will look for "chisel" in PATH.
+	EOF
+}
+
+cleanup() {
+	if [ -d "$CHISEL_CACHE_DIR" ]; then
+		rm -rf "$CHISEL_CACHE_DIR"
+	fi
+}
+trap cleanup EXIT
+
+print_error() {
+	echo "Error:" "$@" >&2
+}
+
+install_slices() {
+	XDG_CACHE_HOME="$CHISEL_CACHE_DIR" $CHISEL_BIN cut "$@"
+}
+
+prepare_dpkg_status() {
+	dir="$CHISEL_CACHE_DIR/chisel/sha256"
+	if [ ! -d "$dir" ]; then
+		print_error "could not find the chisel cache at ${dir}"
+		exit 1
+	fi
+
+	if [ -f "$CHISEL_DPKG_STATUS_FILE" ]; then
+		rm -f "$CHISEL_DPKG_STATUS_FILE"
+	fi
+
+	for f in "$dir"/*; do
+		is_deb="$(file "$f" | grep "Debian binary package" | cat)"
+		if [ -z "$is_deb" ]; then
+			continue
+		fi
+		dpkg-deb -f "$f" >> "$CHISEL_DPKG_STATUS_FILE"
+		echo "" >> "$CHISEL_DPKG_STATUS_FILE"
+	done
+}
+
+while (( "$#" )); do
+	case "$1" in
+		--generate-dpkg-status)
+			if (( "$#" < 2 )); then
+				print_error "Please specify the desired path of the dpkg status file."
+				exit 1
+			fi
+			CHISEL_DPKG_STATUS_FILE="$2"
+			shift 2
+			;;
+		-h|--help)
+			print_usage
+			exit 0
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			echo "Unknown option: $1"
+			exit 1
+			;;
+		*)
+			echo "Unexpected argument: $1"
+			exit 1
+			;;
+	esac
+done
+
+install_slices "$@"
+
+if [ -n "$CHISEL_DPKG_STATUS_FILE" ]; then
+	prepare_dpkg_status
+fi
