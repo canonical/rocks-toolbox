@@ -1,10 +1,11 @@
-name: Release
+name: Tag and Release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag (Optional, without 'v' e.g. 1.2.3)"
+        required: false
 
 jobs:
   release:
@@ -20,7 +21,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: false
-          custom_tag: ${{ github.event.inputs.tag }}
+          custom_tag: ${{ inputs.tag }}
       - name: Create GitHub release
         uses: softprops/action-gh-release@v0.1.15
         with:
