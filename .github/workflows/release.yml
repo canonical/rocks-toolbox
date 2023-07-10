@@ -15,6 +15,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v2
+
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.1
@@ -22,6 +23,21 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ inputs.tag == '' && 'patch' || false }}
           custom_tag: ${{ inputs.tag }}
+
+      - name: Prepare archive
+        id: prep_archive
+        env:
+          TAG: ${{ steps.tag_version.outputs.new_tag }}
+        run: |
+          ARCHIVE_FILE=rocks-toolbox_${TAG}.tar.gz
+          echo "Creating archive $ARCHIVE_FILE"
+
+          dir=dist/${TAG}
+          mkdir -p $dir
+          cp chisel-wrapper $dir
+          cp LICENSE README.md $dir
+          tar -czf dist/$ARCHIVE_FILE -C $dir .
+
       - name: Create GitHub release
         uses: ncipollo/release-action@v1.12.0
         if: startsWith(${{ steps.tag_version.outputs.new_tag }}, 'v')
@@ -31,3 +47,4 @@ jobs:
           body: ${{ steps.tag_version.outputs.changelog }}
           generateReleaseNotes: true
           skipIfReleaseExists: true
+          artifacts: dist/${{ steps.prep_archive.outputs.ARCHIVE_FILE }}
