@@ -36,7 +36,7 @@ jobs:
           mkdir -p $dir
           cp chisel-wrapper $dir
           cp LICENSE README.md $dir
-          tar -czf dist/$ARCHIVE_FILE -C $dir .
+          find $dir -printf "%P\n" | tar -czf dist/$ARCHIVE_FILE --no-recursion -C $dir -T -
 
       - name: Create GitHub release
         uses: ncipollo/release-action@v1.12.0
