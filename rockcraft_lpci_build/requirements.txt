@@ -1,0 +1,4 @@
+distro-info
+GitPython
+launchpadlib
+pyyaml
