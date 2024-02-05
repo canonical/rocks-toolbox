@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+"""Takes a rockcraft.yaml file from the current directory and offloads the
+corresponding builds to Launchpad, via lpci."""
+
 import argparse
 import atexit
 import base64
@@ -50,14 +53,16 @@ jobs:
 
 
 class LaunchpadBuildTimeout(Exception):
-    pass
+    """Custom exception for LP timeouts"""
 
 
 class LaunchpadBuildFailure(Exception):
-    pass
+    """Custom exception for LP build failures"""
 
 
 class RockcraftLpciBuilds:
+    """The LPCI build class"""
+
     def __init__(self) -> None:
         logging.basicConfig(level=logging.INFO)
 
@@ -69,13 +74,16 @@ class RockcraftLpciBuilds:
         try:
             self.rock_name = self.rockcraft_yaml_raw["name"]
         except KeyError:
-            logging.exception(f"{self.rockcraft_yaml} is missing the 'name' field")
+            logging.exception("%s is missing the 'name' field", self.rockcraft_yaml)
             raise
         self.launchpad = self.lp_login("production")
         self.lp_user = self.launchpad.me.name
         self.lp_owner = f"/~{self.lp_user}"
         self.lp_repo_name = f"{self.app_name}-{self.rock_name}-{int(time.time())}"
         self.lp_repo_path = f"~{self.lp_user}/+git/{self.lp_repo_name}"
+        # The following are defined during the script execution
+        self.lp_repo = self.lp_local_repo = self.lp_local_repo_path = None
+        self.target_build_count = 0
 
     @staticmethod
     def cli_args() -> argparse.ArgumentParser:
@@ -129,9 +137,9 @@ class RockcraftLpciBuilds:
         """Delete file"""
         try:
             os.remove(file_path)
-            logging.info(f"File {file_path} deleted successfully.")
-        except OSError as e:
-            logging.exception(f"Error deleting file {file_path}: {e}")
+            logging.info("File %s deleted successfully.", file_path)
+        except OSError as err:
+            logging.exception("Error deleting file %s: %s", file_path, err)
 
     @staticmethod
     def lp_login_failure() -> None:
@@ -141,16 +149,18 @@ class RockcraftLpciBuilds:
 
     @staticmethod
     def delete_git_repository(lp_client: Launchpad, lp_repo_path: str) -> None:
+        """Delete a git repo from Launchpad"""
         git_repo = lp_client.git_repositories.getByPath(path=lp_repo_path)  # type: ignore
 
         if git_repo is None:
             return
 
-        logging.info(f"Deleting repository {lp_repo_path} from Launchpad...")
+        logging.info("Deleting repository %s from Launchpad...", lp_repo_path)
         git_repo.lp_delete()
 
     @staticmethod
     def save_build_logs(lp_build: Entry) -> dict:
+        """Fetch build logs from Launchpad and save them locally"""
         ci_build = requests.get(lp_build.ci_build_link)
         ci_build.raise_for_status()
         ci_build = ci_build.json()
@@ -158,17 +168,40 @@ class RockcraftLpciBuilds:
         if "build_log_url" in ci_build and ci_build["build_log_url"]:
             ci_build_logs = requests.get(ci_build["build_log_url"])
             with tempfile.NamedTemporaryFile(delete=False) as log:
-                logging.info(f"Build log save at {log.name}")
+                logging.info("Build log save at %s", log.name)
                 log.write(ci_build_logs.text.encode())
 
         else:
             logging.warning(
-                f"Unable to get logs. build_log_url not in {lp_build.ci_build_link}."
+                "Unable to get logs. build_log_url not in %s.", lp_build.ci_build_link
             )
 
         return ci_build
 
+    @staticmethod
+    def download_build_artefacts(successful_builds: list) -> None:
+        """Download rocks from the successful LP builds"""
+        for build in successful_builds:
+            artefact_urls = build.getArtifactURLs()
+            rock_url = list(filter(lambda u: ".rock" in u, artefact_urls))
+            if not rock_url:
+                arch = build.distro_arch_series_link.split("/")[-1]
+                logging.warning(
+                    "No rock artefacts found for %s (job %s)", arch, build.title
+                )
+                continue
+            for url in rock_url:
+                download = requests.get(url)
+                download.raise_for_status()
+
+                out_file = url.split("/")[-1]
+                with open(out_file, "wb") as oci_archive:
+                    oci_archive.write(download.content)
+
+                logging.info("Downloaded %s into current directory", out_file)
+
     def ack_project_will_be_public(self) -> None:
+        """Ask for the consent about the project becoming public in Launchpad"""
         if self.args.launchpad_accept_public_upload:
             return
 
@@ -181,28 +214,30 @@ class RockcraftLpciBuilds:
             sys.exit(0)
 
     def read_rockcraft_yaml(self) -> dict:
+        """Parse the rockcraft.yaml file"""
         self.check_rockcraft_yaml()
-        with open(self.rockcraft_yaml) as rockfile:
+        with open(self.rockcraft_yaml, "r", encoding="utf-8") as rockfile:
             try:
                 return yaml.safe_load(rockfile)
             except yaml.scanner.ScannerError:
-                logging.exception(f"{self.rockcraft_yaml} cannot be read")
+                logging.exception("%s cannot be read", self.rockcraft_yaml)
                 raise
 
     def set_lp_creds(self) -> None:
+        """Set the LP credentials file locally"""
         if self.args.lp_credentials_file:
             self.lp_creds = self.args.lp_credentials_file
-            logging.info(f"Using file '{self.lp_creds}' for Launchpad authentication")
+            logging.info("Using file '%s' for Launchpad authentication", self.lp_creds)
         else:
-            fd, self.lp_creds = tempfile.mkstemp()
+            file_d, self.lp_creds = tempfile.mkstemp()
             atexit.register(self.delete_file, self.lp_creds)
 
-            with os.fdopen(fd, "w") as tmp_lp_creds:
+            with os.fdopen(file_d, "w") as tmp_lp_creds:
                 tmp_lp_creds.write(
                     base64.b64decode(self.args.lp_credentials_b64).decode()
                 )
 
-            logging.info(f"Saved Launchpad credentials in {self.lp_creds}")
+            logging.info("Saved Launchpad credentials in %s", self.lp_creds)
 
     def lp_login(self, lp_server: str) -> Launchpad:
         """Login to Launchpad"""
@@ -215,6 +250,7 @@ class RockcraftLpciBuilds:
         )
 
     def check_rockcraft_yaml(self) -> None:
+        """Make sure the rockcraft.yaml file exists"""
         if not self.rockcraft_yaml.exists():
             raise FileNotFoundError(f"File {self.rockcraft_yaml} not found")
 
@@ -231,14 +267,15 @@ class RockcraftLpciBuilds:
         )
 
     def prepare_local_project(self) -> None:
+        """Initiate a local Git repo for the project"""
         self.lp_local_repo_path = tempfile.mkdtemp()
         project_path = os.getcwd()
         logging.info(
-            f"Copying project from {project_path} to {self.lp_local_repo_path}"
+            "Copying project from %s to %s", project_path, self.lp_local_repo_path
         )
         shutil.copytree(project_path, self.lp_local_repo_path, dirs_exist_ok=True)
 
-        logging.info(f"Initializing a new Git repo at {self.lp_local_repo_path}")
+        logging.info("Initializing a new Git repo at %s", self.lp_local_repo_path)
         if Path(f"{self.lp_local_repo_path}/.git").exists():
             shutil.rmtree(f"{self.lp_local_repo_path}/.git")
 
@@ -251,10 +288,11 @@ class RockcraftLpciBuilds:
         self.lp_local_repo = Repo.init(self.lp_local_repo_path)
 
     def get_rock_archs(self) -> list:
+        """Infer archs from rockcraft.yaml's platforms"""
         try:
             platforms = self.rockcraft_yaml_raw["platforms"]
         except KeyError:
-            logging.exception(f"{self.rockcraft_yaml} is missing the platforms")
+            logging.exception("%s is missing the platforms", self.rockcraft_yaml)
             raise
 
         archs = []
@@ -268,13 +306,14 @@ class RockcraftLpciBuilds:
         return list(set(archs))
 
     def get_rock_build_base(self) -> str:
+        """Infer the Ubuntu series for lpci, from the rockcraft.yaml file"""
         try:
             build_base = self.rockcraft_yaml_raw["build_base"]
         except KeyError:
             try:
                 build_base = self.rockcraft_yaml_raw["base"]
             except KeyError:
-                logging.exception(f"{self.rockcraft_yaml} is missing the 'base' field")
+                logging.exception("%s is missing the 'base' field", self.rockcraft_yaml)
                 raise
 
         if build_base == "devel":
@@ -293,32 +332,39 @@ class RockcraftLpciBuilds:
         return all_codenames[all_releases.index(build_base_full_release)]
 
     def write_lpci_configuration_file(self) -> None:
+        """Write the .launchpad.yaml file"""
         lpci_config = yaml.safe_load(LPCI_CONFIG_TEMPLATE)
         archs = self.get_rock_archs()
         build_base = self.get_rock_build_base()
 
         logging.info(
-            f" !! This rock ({self.rock_name}) is being built on "
-            f"{build_base}, for: {archs} !!"
+            " !! This rock (%s) is being built on %s, for: %s !!",
+            self.rock_name,
+            build_base,
+            archs,
         )
         self.target_build_count = len(archs)
         lpci_config["jobs"]["build-rock"]["architectures"] = archs
         lpci_config["jobs"]["build-rock"]["series"] = build_base
         lpci_config_file = f"{self.lp_local_repo_path}/.launchpad.yaml"
-        logging.info(f"LPCI configuration file saved in {lpci_config_file}")
+        logging.info("LPCI configuration file saved in %s", lpci_config_file)
 
-        with open(f"{self.lp_local_repo_path}/.launchpad.yaml", "w") as lpci_file:
+        with open(
+            f"{self.lp_local_repo_path}/.launchpad.yaml", "w", encoding="utf-8"
+        ) as lpci_file:
             yaml.dump(lpci_config, lpci_file)
 
     def get_lp_token(self) -> str:
+        """Get an LP token for the Git remote URL"""
         # Add an extra 5min to the token just to make sure this script exits
         # before the token expires.
         date_expires = datetime.now(timezone.utc) + timedelta(
             seconds=self.args.timeout + 300
         )
         logging.info(
-            f"Creating new Launchpad token for {self.lp_repo_name}. "
-            f"It will expire on {date_expires.strftime('%Y-%m-%dT%H:%M:%S %Z')}"
+            "Creating new Launchpad token for %s. It will expire on %s",
+            self.lp_repo_name,
+            date_expires.strftime("%Y-%m-%dT%H:%M:%S %Z"),
         )
         return self.lp_repo.issueAccessToken(  # type: ignore
             description=f"rockcraft remote-build for {self.rock_name}",
@@ -327,6 +373,7 @@ class RockcraftLpciBuilds:
         )
 
     def push_to_lp(self, repo_url: str) -> None:
+        """Push local git repo to LP"""
         self.lp_local_repo.git.add(A=True)
         self.lp_local_repo.index.commit(f"Initial commit: build {self.rock_name}")
 
@@ -336,16 +383,19 @@ class RockcraftLpciBuilds:
         self.lp_local_repo.git.checkout(branch_name)
 
         logging.info(
-            f"Pushing local project {self.lp_local_repo_path} "
-            f"to {self.lp_repo.git_https_url}"
+            "Pushing local project %s to %s",
+            self.lp_local_repo_path,
+            self.lp_repo.git_https_url,
         )
         origin = self.lp_local_repo.create_remote("origin", url=repo_url)
         origin.push(f"{branch_name}:{branch_name}")
 
     def wait_for_lp_builds(self) -> list:
+        """Wait for all LP builds to finish"""
         logging.info(
-            f"Waiting for builds to finish at {self.lp_repo_path}, "
-            f"on branch {self.lp_local_repo.active_branch.name}"
+            "Waiting for builds to finish at %s, on branch %s",
+            self.lp_repo_path,
+            self.lp_local_repo.active_branch.name,
         )
 
         keep_waiting = True
@@ -363,36 +413,37 @@ class RockcraftLpciBuilds:
             )
             if len(build_status) != self.target_build_count:
                 logging.warning(
-                    f"Need {self.target_build_count} builds "
-                    f"but Launchpad only listed {len(build_status)} so far. Waiting"
+                    "Need %s builds but Launchpad only listed %s so far. Waiting",
+                    self.target_build_count,
+                    len(build_status),
                 )
                 time.sleep(5)
                 continue
 
             for build in build_status:
                 if build.ci_build_link in finished_builds:
-                    logging.debug(f"{build.ci_build_link} has finished already")
+                    logging.debug("%s has finished already", build.ci_build_link)
                     continue
 
-                logging.debug(f"Tracking build at {build.ci_build_link}")
+                logging.debug("Tracking build at %s", build.ci_build_link)
                 if build.result in ["Failed", "Skipped", "Cancelled", "Succeeded"]:
                     finished_builds.append(build.ci_build_link)
                     ci_build = self.save_build_logs(build)
                     log_msg_prefix = f"[{ci_build.get('arch_tag', 'unknown arch')}]"
                     if build.result == "Succeeded":
-                        logging.info(f"{log_msg_prefix} Build successful!")
+                        logging.info("%s Build successful!", log_msg_prefix)
                         successful_builds.append(build)
                         continue
 
                     # If it gets here, it means it is finished and not successful
                     error_msg = f"{log_msg_prefix} Build failed!"
                     if self.args.allow_build_failures:
-                        logging.error(f"{error_msg}. Continuing")
+                        logging.error("%s. Continuing", error_msg)
                         continue
-                    else:
-                        logging.error(f"{error_msg}. Keeping the Launchpad repo alive")
-                        atexit.unregister(self.delete_git_repository)
-                        raise LaunchpadBuildFailure()
+
+                    logging.error("%s. Keeping the Launchpad repo alive", error_msg)
+                    atexit.unregister(self.delete_git_repository)
+                    raise LaunchpadBuildFailure()
 
                 # If we got here, it means the build is still in progress
                 # We'll keep going until len(finished_builds) >= len(build_status)
@@ -401,36 +452,19 @@ class RockcraftLpciBuilds:
                 break
 
             logging.info(
-                f"{len(finished_builds)}/{len(build_status)} builds finished, waiting"
+                "%s builds finished, waiting",
+                f"{len(finished_builds)}/{len(build_status)}",
             )
             time.sleep(30)
 
         return successful_builds
 
-    def download_build_artefacts(successful_builds: list) -> None:
-        for build in successful_builds:
-            artefact_urls = build.getArtifactURLs()
-            rock_url = list(filter(lambda u: ".rock" in u, artefact_urls))
-            if not rock_url:
-                arch = build.distro_arch_series_link.split("/")[-1]
-                logging.warning(
-                    f"No rock artefacts found for {arch} (job {build.title})"
-                )
-                continue
-            for url in rock_url:
-                r = requests.get(url)
-                r.raise_for_status()
-
-                out_file = url.split("/")[-1]
-                with open(out_file, "wb") as oci_archive:
-                    oci_archive.write(r.content)
-
-                logging.info(f"Downloaded {out_file} into current directory")
-
     def run(self) -> None:
         """Main function"""
         self.ack_project_will_be_public()
-        logging.info(f"[launchpad] Logged in as {self.lp_user} ({self.launchpad.me})")
+        logging.info(
+            "[launchpad] Logged in as %s (%s)", self.lp_user, self.launchpad.me
+        )
         self.prepare_local_project()
 
         logging.info("Creating .launchpad.yaml file...")
@@ -443,18 +477,20 @@ class RockcraftLpciBuilds:
             f"~{self.lp_user}/+git/{self.lp_repo_name}/"
         )
         logging.info(
-            f"The remote for {self.lp_repo_name} is {lp_repo_url.replace(token, '***')}"
+            "The remote for %s is %s",
+            self.lp_repo_name,
+            lp_repo_url.replace(token, "***"),
         )
         try:
             self.push_to_lp(lp_repo_url)
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             # Catch anything, for a graceful termination, to allow for the cleanup
             logging.exception("Failed to push local project to Launchpad")
             return
 
         logging.info(
-            " !! You can follow your builds at "
-            f"{self.lp_repo.web_link}/+ref/{self.lp_local_repo.active_branch.name} !!"
+            " !! You can follow your builds at %s !!",
+            f"{self.lp_repo.web_link}/+ref/{self.lp_local_repo.active_branch.name}",
         )
 
         successful_builds = self.wait_for_lp_builds()
