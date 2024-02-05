@@ -3,7 +3,6 @@
 import argparse
 import atexit
 import base64
-import distro_info
 import logging
 import os
 import shutil
@@ -12,8 +11,9 @@ import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import requests
 
+import distro_info
+import requests
 import yaml
 from git import Repo
 
@@ -28,7 +28,7 @@ pipeline:
 
 jobs:
   build-rock:
-    # The "series" field is included by the code 
+    # The "series" field is included by the code
     # The "architectures" field is included by the code
     snaps:
     #   - name: lxd
@@ -433,7 +433,7 @@ class RockcraftLpciBuilds:
         logging.info(f"[launchpad] Logged in as {self.lp_user} ({self.launchpad.me})")
         self.prepare_local_project()
 
-        logging.info(f"Creating .launchpad.yaml file...")
+        logging.info("Creating .launchpad.yaml file...")
         self.write_lpci_configuration_file()
         self.lp_repo = self.create_git_repository()
         atexit.register(self.delete_git_repository, self.launchpad, self.lp_repo_path)
@@ -447,9 +447,9 @@ class RockcraftLpciBuilds:
         )
         try:
             self.push_to_lp(lp_repo_url)
-        except:
+        except Exception:
+            # Catch anything, for a graceful termination, to allow for the cleanup
             logging.exception("Failed to push local project to Launchpad")
-            # Graceful termination to allow for the cleanup
             return
 
         logging.info(
@@ -460,7 +460,7 @@ class RockcraftLpciBuilds:
         successful_builds = self.wait_for_lp_builds()
 
         if not successful_builds:
-            logging.error(f"No builds were successful! There are no rocks to retrieve")
+            logging.error("No builds were successful! There are no rocks to retrieve")
             return
 
         self.download_build_artefacts(successful_builds)
