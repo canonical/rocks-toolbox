@@ -14,7 +14,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
+from typing import cast
 import distro_info
 import requests
 import yaml
@@ -23,6 +23,7 @@ from git import Repo
 # Launchpad API docs: https://launchpad.net/+apidoc/devel.html
 from launchpadlib.launchpad import Launchpad
 from lazr.restfulclient.resource import Entry
+from retry import retry
 
 # lpci reference: https://lpci.readthedocs.io/en/latest/configuration.html
 LPCI_CONFIG_TEMPLATE = """
@@ -58,6 +59,10 @@ class LaunchpadBuildTimeout(Exception):
 
 class LaunchpadBuildFailure(Exception):
     """Custom exception for LP build failures"""
+
+
+class LaunchpadBuildMissingRockArtefacts(Exception):
+    """Custom exception for LP builds that miss their artefacts"""
 
 
 class RockcraftLpciBuilds:
@@ -159,38 +164,40 @@ class RockcraftLpciBuilds:
         git_repo.lp_delete()
 
     @staticmethod
-    def save_build_logs(lp_build: Entry) -> dict:
+    def save_build_logs(ci_build: Entry) -> None:
         """Fetch build logs from Launchpad and save them locally"""
-        ci_build = requests.get(lp_build.ci_build_link)
-        ci_build.raise_for_status()
-        ci_build = ci_build.json()
-
-        if "build_log_url" in ci_build and ci_build["build_log_url"]:
-            ci_build_logs = requests.get(ci_build["build_log_url"])
+        if ci_build.build_log_url:
+            ci_build_logs = requests.get(ci_build.build_log_url)
             with tempfile.NamedTemporaryFile(delete=False) as log:
                 logging.info("Build log save at %s", log.name)
                 log.write(ci_build_logs.text.encode())
 
         else:
             logging.warning(
-                "Unable to get logs. build_log_url not in %s.", lp_build.ci_build_link
+                "Unable to get logs. build_log_url not in %s.", ci_build.web_link
             )
 
-        return ci_build
-
     @staticmethod
-    def download_build_artefacts(successful_builds: list) -> None:
+    @retry(LaunchpadBuildMissingRockArtefacts, tries=3, delay=30, backoff=2)
+    def get_artefact_urls(build: Entry) -> list:
+        """List the build artefacts, retrying if they are not immediately available"""
+        arch = build.distro_arch_series_link.split("/")[-1]
+
+        artefact_urls = build.getArtifactURLs()
+        rock_urls = list(filter(lambda u: ".rock" in u, artefact_urls))
+        logging.info("List of artefacts for %s: %s", arch, artefact_urls)
+        if not rock_urls:
+            raise LaunchpadBuildMissingRockArtefacts(
+                f"No rock artefacts found for {arch} (job {build.title})"
+            )
+
+        return rock_urls
+
+    def download_build_artefacts(self, successful_builds: list) -> None:
         """Download rocks from the successful LP builds"""
         for build in successful_builds:
-            artefact_urls = build.getArtifactURLs()
-            rock_url = list(filter(lambda u: ".rock" in u, artefact_urls))
-            if not rock_url:
-                arch = build.distro_arch_series_link.split("/")[-1]
-                logging.warning(
-                    "No rock artefacts found for %s (job %s)", arch, build.title
-                )
-                continue
-            for url in rock_url:
+            rock_urls = self.get_artefact_urls(build)
+            for url in rock_urls:
                 download = requests.get(url)
                 download.raise_for_status()
 
@@ -425,12 +432,17 @@ class RockcraftLpciBuilds:
                     logging.debug("%s has finished already", build.ci_build_link)
                     continue
 
-                logging.debug("Tracking build at %s", build.ci_build_link)
-                if build.result in ["Failed", "Skipped", "Cancelled", "Succeeded"]:
+                ci_build = self.launchpad.load(build.ci_build_link)
+                log_msg_prefix = f"[{ci_build.arch_tag}]"
+
+                # See buildstates at https://launchpad.net/+apidoc/devel.html#ci_build
+                if any(
+                    sub_state in ci_build.buildstate.lower()
+                    for sub_state in ["failed", "problem", "cancelled", "successfully"]
+                ):
                     finished_builds.append(build.ci_build_link)
-                    ci_build = self.save_build_logs(build)
-                    log_msg_prefix = f"[{ci_build.get('arch_tag', 'unknown arch')}]"
-                    if build.result == "Succeeded":
+                    self.save_build_logs(ci_build)
+                    if "successfully" in ci_build.buildstate.lower():
                         logging.info("%s Build successful!", log_msg_prefix)
                         successful_builds.append(build)
                         continue
@@ -438,12 +450,14 @@ class RockcraftLpciBuilds:
                     # If it gets here, it means it is finished and not successful
                     error_msg = f"{log_msg_prefix} Build failed!"
                     if self.args.allow_build_failures:
-                        logging.error("%s. Continuing", error_msg)
+                        logging.error("%s Continuing", error_msg)
                         continue
 
                     logging.error("%s. Keeping the Launchpad repo alive", error_msg)
                     atexit.unregister(self.delete_git_repository)
                     raise LaunchpadBuildFailure()
+                else:
+                    logging.info("%s State: %s", log_msg_prefix, ci_build.buildstate)
 
                 # If we got here, it means the build is still in progress
                 # We'll keep going until len(finished_builds) >= len(build_status)
