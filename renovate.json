@@ -2,5 +2,22 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "prHourlyLimit": 0,
+  "ignorePaths": [
+    ".github/*"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^rockcraft_rock/rockcraft.yaml$"
+      ],
+      "matchStrings": [
+        "source-tag: (?<currentValue>.*?)\\s"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "canonical/chisel"
+    }
   ]
 }
