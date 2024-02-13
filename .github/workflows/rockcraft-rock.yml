@@ -1,0 +1,95 @@
+name: Rockcraft rock
+
+on:
+  push:
+    paths:
+      - "rockcraft_rock/rockcraft.y*ml"
+
+jobs:
+  build:
+    name: Build Rockcraft rock
+    runs-on: ubuntu-latest
+    outputs:
+      oci-archive: ${{ steps.rockcraft.outputs.rock }}
+      image-tag: ${{ steps.get-version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: get-version
+        run: |
+          tag="$(cat rockcraft_rock/rockcraft.yaml \
+            | grep "source-tag: " \
+            | grep -v " v"\
+            | awk -F' ' '{print $NF}')"
+
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+      - name: Build rock
+        id: rockcraft
+        uses: canonical/craft-actions/rockcraft-pack@main
+        with:
+          path: rockcraft_rock
+          verbosity: debug
+      - uses: actions/cache/save@v3
+        with:
+          path: ${{ steps.rockcraft.outputs.rock }}
+          key: ${{ github.run_id }}
+
+  test:
+    name: Test Rockcraft rock
+    runs-on: ubuntu-latest
+    needs: [build]
+    env:
+      TEST_DOCKER_IMAGE: "test:latest"
+    steps:
+      - uses: actions/cache/restore@v3
+        with:
+          path: ${{ needs.build.outputs.oci-archive }}
+          key: ${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Install Skopeo
+        run: |
+          # skopeo comes inside rockcraft
+          sudo snap install rockcraft --classic
+      - run: |
+          /snap/rockcraft/current/bin/skopeo copy \
+            oci-archive:${{ needs.build.outputs.oci-archive }} \
+            docker-daemon:${{ env.TEST_DOCKER_IMAGE }}
+      - name: Functional test
+        run: |
+          docker run --rm ${{ env.TEST_DOCKER_IMAGE }} \
+            exec /usr/libexec/rockcraft/rockcraft help
+
+  upload:
+    name: Upload Rockcraft rock
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/cache/restore@v3
+        with:
+          path: ${{ needs.build.outputs.oci-archive }}
+          key: ${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Upload rock
+        uses: actions/upload-artifact@v3
+        with:
+          name: rock
+          path: ${{ needs.build.outputs.oci-archive }}
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Skopeo
+        run: |
+          # skopeo comes inside rockcraft
+          sudo snap install rockcraft --classic
+      - name: Publish rock to GHCR
+        run: |
+          /snap/rockcraft/current/bin/skopeo copy \
+            oci-archive:${{ needs.build.outputs.oci-archive }} \
+            docker://ghcr.io/${{ github.repository }}/rockcraft-rock:latest
+
+          /snap/rockcraft/current/bin/skopeo copy \
+            oci-archive:${{ needs.build.outputs.oci-archive }} \
+            docker://ghcr.io/${{ github.repository }}/rockcraft-rock:${{ needs.build.outputs.image-tag}}
