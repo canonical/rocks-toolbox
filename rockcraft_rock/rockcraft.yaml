@@ -82,7 +82,7 @@ parts:
   umoci:
     plugin: make
     source: https://github.com/opencontainers/umoci.git
-    source-tag: v0.4.7
+    source-tag: v0.9.0
     make-parameters:
       - umoci.static
     override-build: |
