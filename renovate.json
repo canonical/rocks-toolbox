@@ -14,10 +14,10 @@
         "^rockcraft_rock/rockcraft.yaml$"
       ],
       "matchStrings": [
-        "source-tag: (?<currentValue>.*?)\\s"
+        "rockcraft\\.git[\\s]*?$[\\s]*?source-tag:\\s+(?<currentValue>.*?)\\s"
       ],
       "datasourceTemplate": "github-releases",
-      "depNameTemplate": "canonical/chisel"
+      "depNameTemplate": "canonical/rockcraft"
     }
   ]
 }
