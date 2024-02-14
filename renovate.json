@@ -14,7 +14,7 @@
         "^rockcraft_rock/rockcraft.yaml$"
       ],
       "matchStrings": [
-        "rockcraft$\s+source-tag:\s+(?<currentValue>.*?)"
+        "rockcraft\\.git[\\s]*?$[\\s]*?source-tag:\\s+(?<currentValue>.*?)\\s"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "canonical/rockcraft"
