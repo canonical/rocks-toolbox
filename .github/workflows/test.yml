@@ -9,6 +9,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-      - run: pip install pytest
-      - run: pip install -r rockcraft_lpci_build/requirements.txt
+      - run: pip install -r rockcraft_lpci_build/requirements.test.txt
       - run: pytest rockcraft_lpci_build/tests/ -vvv -s -rP --log-cli-level=INFO
