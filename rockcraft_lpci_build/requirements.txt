@@ -1,0 +1,5 @@
+distro-info
+GitPython
+launchpadlib
+pyyaml
+retry
