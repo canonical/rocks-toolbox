@@ -2,4 +2,5 @@ distro-info
 GitPython
 launchpadlib
 pyyaml
+requests
 retry
