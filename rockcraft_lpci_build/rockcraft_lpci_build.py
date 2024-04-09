@@ -332,9 +332,15 @@ class RockcraftLpciBuilds:
         )
 
         build_base_release = build_base.replace(":", "@").split("@")[-1]
-        build_base_full_release = list(
-            filter(lambda r: build_base_release in r, all_releases)
-        )[0]
+        try:
+            build_base_full_release = list(
+                filter(lambda r: build_base_release in r, all_releases)
+            )[0]
+        except IndexError:
+            logging.error(
+                f"Can't find {build_base_release} in Ubuntu releases ({all_releases})"
+            )
+            raise
 
         return all_codenames[all_releases.index(build_base_full_release)]
 
