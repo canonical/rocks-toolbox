@@ -314,9 +314,13 @@ class RockcraftLpciBuilds:
 
     def get_rock_build_base(self) -> str:
         """Infer the Ubuntu series for lpci, from the rockcraft.yaml file"""
-        try:
-            build_base = self.rockcraft_yaml_raw["build_base"]
-        except KeyError:
+        build_base = self.rockcraft_yaml_raw.get(
+            "build-base", self.rockcraft_yaml_raw.get("build_base")
+        )
+
+        if not build_base:
+            logging.info(f"No 'build-base' in the rockfile. Using 'base' instead")
+            logging.info(self.rockcraft_yaml_raw)
             try:
                 build_base = self.rockcraft_yaml_raw["base"]
             except KeyError:
@@ -459,7 +463,7 @@ class RockcraftLpciBuilds:
                         logging.error("%s Continuing", error_msg)
                         continue
 
-                    logging.error("%s. Keeping the Launchpad repo alive", error_msg)
+                    logging.error("%s Keeping the Launchpad repo alive", error_msg)
                     atexit.unregister(self.delete_git_repository)
                     raise LaunchpadBuildFailure()
                 else:
