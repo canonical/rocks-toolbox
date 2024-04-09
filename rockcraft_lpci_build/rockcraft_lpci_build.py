@@ -465,8 +465,9 @@ class RockcraftLpciBuilds:
                         logging.error("%s Continuing", error_msg)
                         continue
 
-                    logging.error("%s Keeping the Launchpad repo alive", error_msg)
-                    atexit.unregister(self.delete_git_repository)
+                    # logging.error("%s Keeping the Launchpad repo alive", error_msg)
+                    logging.error(error_msg)
+                    # atexit.unregister(self.delete_git_repository)
                     raise LaunchpadBuildFailure()
                 else:
                     logging.info("%s State: %s", log_msg_prefix, ci_build.buildstate)
