@@ -127,12 +127,14 @@ class RockcraftLpciBuilds:
         parser.add_argument(
             "--allow-build-failures",
             action="store_true",
-            help=str("acknowledge that uploaded project will be publicly available"),
+            help=str(
+                "for multi-arch builds, continue even if some builds fail"
+            ),
         )
         parser.add_argument(
             "--launchpad-accept-public-upload",
             action="store_true",
-            help=str("for multi-arch builds, continue even if some builds fail"),
+            help=str("acknowledge that uploaded project will be publicly available"),
         )
 
         return parser
