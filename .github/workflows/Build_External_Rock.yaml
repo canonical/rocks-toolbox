@@ -1,1 +1,18 @@
-../../oci-factory_workflows/examples/Build_External_Rock.yaml
+name: Build External Rock
+
+
+on:
+    push:
+        paths:
+            - oci-factory_workflows/examples/Build_External_Rock.yaml
+    workflow_dispatch:
+
+jobs:
+    build:
+        uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
+        with:
+            oci-archive-name: "external_mock-rock"
+            rock-repo: clay-lake/mock-rock
+            rock-repo-commit: main
+            rockfile-directory: /mock-rock/1.1/
+            arch-map: '{"amd64": "ubuntu-22.04"}'
