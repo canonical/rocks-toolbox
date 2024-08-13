@@ -1,0 +1,25 @@
+name: 'Install Umoci'
+description: 'Install umoci modifies Open Container images (UMOCI)'
+inputs:
+  version: 
+    description: UMOCI version to install
+    type: str
+    required: false
+    default: 'v0.4.7'
+  binary: 
+    description: UMOCI architecture to install
+    type: str
+    required: false
+    default: 'umoci.amd64'
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install UMOCI
+      run: |
+        wget https://github.com/opencontainers/umoci/releases/download/${{ inputs.version }}/${{ inputs.binary }}
+        sudo mv ${{ inputs.binary }} /usr/bin/umoci
+        sudo chmod +x /usr/bin/umoci
+        
+
