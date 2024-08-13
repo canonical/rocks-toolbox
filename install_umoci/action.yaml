@@ -17,9 +17,10 @@ runs:
   using: "composite"
   steps:
     - name: Install UMOCI
+      shell: bash
       run: |
         wget https://github.com/opencontainers/umoci/releases/download/${{ inputs.version }}/${{ inputs.binary }}
         sudo mv ${{ inputs.binary }} /usr/bin/umoci
         sudo chmod +x /usr/bin/umoci
-        
+
 
