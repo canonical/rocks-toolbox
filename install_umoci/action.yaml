@@ -16,11 +16,42 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install UMOCI
+
+    - name: Configure
+      id: configure
+      run: |
+        echo "cache-key=${{ inputs.version }}/${{ inputs.binary }}"  >> $GITHUB_OUTPUT
+
+    - name: Restore Cache
+      uses: actions/cache/restore@v4
+      id: restore-cache
+      with:
+        path: ${{ inputs.binary }}
+        key: ${{ steps.configure.outputs.cache-key }}
+
+    # only download UMOCI if not cached
+    - name: Download UMOCI
+      if: steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         wget https://github.com/opencontainers/umoci/releases/download/${{ inputs.version }}/${{ inputs.binary }}
+
+    - name: Save Cache
+      uses: actions/cache/save@v4
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      with:
+          path: ${{ inputs.binary }}
+          key: ${{ steps.configure.outputs.cache-key }}
+
+
+    # only download UMOCI if not cached
+    - name: Install UMOCI
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
         sudo mv ${{ inputs.binary }} /usr/bin/umoci
         sudo chmod +x /usr/bin/umoci
+
+
 
 
