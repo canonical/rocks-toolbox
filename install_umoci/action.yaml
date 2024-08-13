@@ -19,6 +19,7 @@ runs:
 
     - name: Configure
       id: configure
+      shell: bash
       run: |
         echo "cache-key=${{ inputs.version }}/${{ inputs.binary }}"  >> $GITHUB_OUTPUT
 
