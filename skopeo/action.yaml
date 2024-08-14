@@ -1,5 +1,5 @@
 name: 'Skopeo'
-description: 'Run Skopeo from 'quay.io/skopeo/stable:v1.15.1''
+description: 'Run Skopeo from 'quay.io/skopeo/stable:v1.15.1'
 
 # TODO: 
 # - experiment with downloading to host system instead of using a container
