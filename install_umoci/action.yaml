@@ -44,10 +44,8 @@ runs:
           path: ${{ inputs.binary }}
           key: ${{ steps.configure.outputs.cache-key }}
 
-
     # only download UMOCI if not cached
     - name: Install UMOCI
-      if: steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         sudo mv ${{ inputs.binary }} /usr/bin/umoci
