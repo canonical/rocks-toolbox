@@ -1,5 +1,5 @@
 name: 'Skopeo'
-description: 'Run Skopeo from 'quay.io/skopeo/stable:v1.15.1'
+description: 'Run command in container'
 
 # TODO: 
 # - experiment with downloading to host system instead of using a container
@@ -15,11 +15,16 @@ inputs:
     type: str
     required: false
     default: '$PWD'
-  image: 
-    description: Skopeo Image Reference
+  image-name: 
+    description: Image Name
     type: str
     required: false
-    default: 'quay.io/skopeo/stable:v1.15.1'
+    default: 'quay.io/skopeo/stable'
+  image-tag: 
+    description: Image Tag
+    type: str
+    required: false
+    default: 'v1.15.1'
 
 # TODO: make name more unique
 env:
@@ -33,8 +38,8 @@ runs:
       id: configure
       shell: bash
       run: |
-        echo "image-name=skopeo-image-${{ inputs.image }}"
-        echo "cache-key=skopeo-image-${{ inputs.image }}"
+        echo "image=skopeo-image-${{ inputs.image-name }}:${{ inputs.image-tag }}"
+        echo "cache-key=skopeo-image-${{ inputs.image-name }}:${{ inputs.image-tag }}"
 
     - name: Restore Cache
       uses: actions/cache/restore@v4
@@ -47,8 +52,8 @@ runs:
       if: steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        docker image pull ${{ inputs.image }}
-        docker image save ${{ inputs.image }} > ${{ env.IMAGE_PATH }}
+        docker image pull ${{ steps.configure.outputs.image }}
+        docker image save ${{ steps.configure.outputs.image }} > ${{ env.IMAGE_PATH }}
 
     - name: Save Cache 
       if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -62,7 +67,7 @@ runs:
       if: steps.restore-cache.outputs.cache-hit == 'true'
       shell: bash
       run: |
-        docker image load ${{ inputs.image }} < ${{ env.IMAGE_PATH }}
+        docker image load ${{ steps.configure.outputs.image }} < ${{ env.IMAGE_PATH }}
 
 
     - name: RUN Skopeo
@@ -71,7 +76,7 @@ runs:
       run: |
         docker run --rm -v ${{ inputs.work-directory }}:/workdir \
           -w /workdir \
-          ${{ inputs.image }} \
+          ${{ steps.configure.outputs.image }} \
           ${{ inputs.args }}
           
 
