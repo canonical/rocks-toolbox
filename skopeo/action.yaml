@@ -1,0 +1,79 @@
+name: 'Skopeo'
+description: 'Run Skopeo from 'quay.io/skopeo/stable:v1.15.1''
+
+# TODO: 
+# - experiment with downloading to host system instead of using a container
+
+
+inputs:
+  args: 
+    description: arguments to run with skopeo
+    type: str
+    required: true
+  work-directory: 
+    description: Path to run Skopeo on. Partent directory will not be accessible. 
+    type: str
+    required: false
+    default: '$PWD'
+  image: 
+    description: Skopeo Image Reference
+    type: str
+    required: false
+    default: 'quay.io/skopeo/stable:v1.15.1'
+
+# TODO: make name more unique
+env:
+  IMAGE_PATH: skopeo.tar
+
+runs:
+  using: composite
+  steps:
+
+    - name: Configure
+      id: configure
+      shell: bash
+      run: |
+        echo "image-name=skopeo-image-${{ inputs.image }}"
+        echo "cache-key=skopeo-image-${{ inputs.image }}"
+
+    - name: Restore Cache
+      uses: actions/cache/restore@v4
+      id: restore-cache
+      with:
+        path: ${{ env.IMAGE_PATH }}
+        key: ${{ steps.configure.outputs.cache-key }}
+
+    - name: Download Skopeo
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        docker image pull ${{ inputs.image }}
+        docker image save ${{ inputs.image }} > ${{ env.IMAGE_PATH }}
+
+    - name: Save Cache 
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.IMAGE_PATH }}
+        key: ${{ steps.configure.outputs.cache-key }}
+
+
+    - name: Load Skopeo
+      if: steps.restore-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        docker image load ${{ inputs.image }} < ${{ env.IMAGE_PATH }}
+
+
+    - name: RUN Skopeo
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        docker run --rm -v ${{ inputs.work-directory }}:/workdir \
+          -w /workdir \
+          ${{ inputs.image }} \
+          ${{ inputs.args }}
+          
+
+
+
