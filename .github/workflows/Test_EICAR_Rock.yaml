@@ -7,7 +7,7 @@ on:
             - .github/workflows/Test_EICAR_Rock.yaml
     workflow_dispatch:
         inputs:
-           oci-archive-name:
+            oci-archive-name:
                 description: "Filname of built rock image"
                 type: string
                 default: "eicar-rock.rock"
@@ -27,8 +27,6 @@ on:
 
 
 jobs:
-
-
     build-rock:
         name: Build Rock
         uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
