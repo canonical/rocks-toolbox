@@ -18,14 +18,7 @@ jobs:
             rock-repo-commit: oci-factory_workflows
             rockfile-directory: /oci-factory_workflows/rocks/eicar
             arch-map: '{"amd64": "ubuntu-22.04"}'
-    
-    debug:
-        name: Test
-        needs: [build]
-        runs-on: ubuntu-22.04
-        steps:
-            - name: test
-              run: echo "${{ needs.build.inputs.oci-archive-name }}"
+            
 
     test:
         uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
