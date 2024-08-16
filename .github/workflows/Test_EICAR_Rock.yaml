@@ -4,7 +4,7 @@ name: Test EICAR Rock
 on:
     push:
         paths:
-            - oci-factory_workflows/examples/Test_EICAR_Rock.yaml
+            - .github/workflows/Test_EICAR_Rock.yaml
     workflow_dispatch:
 
 jobs:

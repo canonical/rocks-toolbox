@@ -4,7 +4,7 @@ name: Build External Rock
 on:
     push:
         paths:
-            - oci-factory_workflows/examples/Build_External_Rock.yaml
+            - .github/workflows/Build_External_Rock.yaml
     workflow_dispatch:
 
 jobs:
