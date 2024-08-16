@@ -22,7 +22,7 @@ on:
             rockfile-directory:
                 description: "Path to rockcraft.yaml project file"
                 type: string
-                default: "/oci-factory_workflows/rocks/eicar"
+                default: "oci-factory_workflows/rocks/eicar"
 
 
 
@@ -34,7 +34,7 @@ jobs:
             oci-archive-name: "${{ inputs.oci-archive-name }}"
             rock-repo: "${{ inputs.rock-repo }}"
             rock-repo-commit: "${{ inputs.rock-repo-commit }}"
-            rockfile-directory: "${{ inputs.rockfile-directory }}"
+            rockfile-directory: "oci-factory_workflows/rocks/eicar"
             arch-map: '{"amd64": "ubuntu-22.04"}'
 
 
