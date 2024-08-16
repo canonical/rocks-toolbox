@@ -1,4 +1,4 @@
-name: Build External Rock
+name: Test EICAR Rock
 
 
 on:
@@ -21,3 +21,5 @@ jobs:
         # uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
         # with:
         #     oci-archive-name: "eicar-rock"
+
+        
