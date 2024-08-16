@@ -6,24 +6,45 @@ on:
         paths:
             - .github/workflows/Test_EICAR_Rock.yaml
     workflow_dispatch:
+        inputs:
+           oci-archive-name:
+                description: "Filname of built rock image"
+                type: string
+                default: "eicar-rock.rock"
+            rock-repo:
+                description: "Repository to source project file"
+                type: string
+                default: "canonical/rocks-toolbox"
+            rock-repo-commit:
+                description: "Reference to source project file"
+                type: string
+                default: "oci-factory_workflows"
+            rockfile-directory:
+                description: "Path to rockcraft.yaml project file"
+                type: string
+                default: "/oci-factory_workflows/rocks/eicar"
+
+
 
 jobs:
 
 
-    build:
+    build-rock:
+        name: Build Rock
         uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
         with:
-            oci-archive-name: "eicar-rock"
-            rock-repo: canonical/rocks-toolbox
-            rock-repo-commit: oci-factory_workflows
-            rockfile-directory: /oci-factory_workflows/rocks/eicar
+            oci-archive-name: "${{ inputs.oci-archive-name }}"
+            rock-repo: "${{ inputs.rock-repo }}"
+            rock-repo-commit: "${{ inputs.rock-repo-commit }}"
+            rockfile-directory: "${{ inputs.rockfile-directory }}"
             arch-map: '{"amd64": "ubuntu-22.04"}'
-            
 
-    test:
+
+    test-rock:
+        name: Test Rock
         uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
-        needs: [build]
+        needs: [build-rock]
         with:
-            oci-archive-name: "eicar-rock"
+            oci-archive-name: "${{ inputs.oci-archive-name }}"
         
 
