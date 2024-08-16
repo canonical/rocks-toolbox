@@ -8,8 +8,9 @@ on:
     workflow_dispatch:
 
 jobs:
-    build:
 
+
+    build:
         uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
         with:
             oci-archive-name: "eicar-rock"
@@ -17,9 +18,18 @@ jobs:
             rock-repo-commit: oci-factory_workflows
             rockfile-directory: /oci-factory_workflows/rocks/eicar
             arch-map: '{"amd64": "ubuntu-22.04"}'
+    
+    debug:
+        name: Test
+        runs-on: ubuntu-22.04
+        steps:
+            - name: test
+              run: echo "${{ needs.build.inputs.oci-archive-name }}"
 
-        # uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
-        # with:
-        #     oci-archive-name: "eicar-rock"
-
+    test:
+        uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
+        needs: [build]
+        with:
+            oci-archive-name: "eicar-rock"
         
+
