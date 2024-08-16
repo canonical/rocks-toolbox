@@ -1,0 +1,19 @@
+name: eicar-rock
+summary: A test rock to check malware scanners
+description: An extension of the "Hello World" rock. This rock contains the EICAR test file to test if malware scanners are working as expected 
+version: "latest"
+license: Apache-2.0
+
+base: ubuntu@22.04
+platforms:
+  amd64: 
+
+parts:
+  hello:
+    plugin: nil
+    stage-packages:
+      - hello
+  eicar:
+    plugin: dump
+    source-type: file
+    source: src/eicar

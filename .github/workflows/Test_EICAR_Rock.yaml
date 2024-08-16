@@ -1,0 +1,23 @@
+name: Build External Rock
+
+
+on:
+    push:
+        paths:
+            - oci-factory_workflows/examples/Test_EICAR_Rock.yaml
+    workflow_dispatch:
+
+jobs:
+    build:
+
+        uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
+        with:
+            oci-archive-name: "eicar-rock"
+            rock-repo: canonical/rocks-toolbox
+            rock-repo-commit: oci-factory_workflows
+            rockfile-directory: /oci-factory_workflows/rocks/eicar
+            arch-map: '{"amd64": "ubuntu-22.04"}'
+
+        # uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
+        # with:
+        #     oci-archive-name: "eicar-rock"
