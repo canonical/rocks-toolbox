@@ -24,6 +24,6 @@ jobs:
         uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@refactor-workflows
         needs: [build-rock]
         with:
-            oci-archive-name: "${{ inputs.oci-archive-name }}"
+            oci-archive-name: "eicar-rock.rock"
         
 
