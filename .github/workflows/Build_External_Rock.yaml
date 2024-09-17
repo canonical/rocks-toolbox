@@ -15,4 +15,3 @@ jobs:
             rock-repo: clay-lake/mock-rock
             rock-repo-commit: main
             rockfile-directory: /mock-rock/1.1/
-            arch-map: '{"amd64": "ubuntu-22.04"}'
