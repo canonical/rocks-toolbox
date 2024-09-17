@@ -9,7 +9,7 @@ on:
 
 jobs:
     build:
-        uses: clay-lake/oci-factory/.github/workflows/Build-Rock.yaml@refactor-workflows
+        uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@ROCKS-1452/oci-factory-refactor-build-rock-to-be-externally-reusable
         with:
             oci-archive-name: "external_mock-rock"
             rock-repo: clay-lake/mock-rock
