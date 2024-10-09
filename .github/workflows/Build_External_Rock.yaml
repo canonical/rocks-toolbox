@@ -10,7 +10,7 @@ on:
 jobs:
     build:
         # uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@ROCKS-1452/oci-factory-refactor-build-rock-to-be-externally-reusable
-        uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@5bd360cfc6a2024a64ae8dc4bd98a1280dc55aae
+        uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@dc7b5339bf56afd78cc8a1193728c71c5c3d5277
         with:
             oci-archive-name: "external_mock-rock"
             rock-repo: clay-lake/mock-rock
