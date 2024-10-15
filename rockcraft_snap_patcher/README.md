@@ -1,7 +1,7 @@
 # Rockcraft Patcher
 
 `patcher.sh` enables quick rockcraft "builds" for development by patching 
-an existing snap package with changes made to dependancies on the local
+an existing snap package with changes made to dependencies on the local
 system.  
 
 ## How to use
