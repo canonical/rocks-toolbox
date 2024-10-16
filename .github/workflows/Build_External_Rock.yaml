@@ -1,6 +1,5 @@
 name: Build External Rock 
 
-
 on:
     push:
         paths:
@@ -15,4 +14,3 @@ jobs:
             rock-repo: canonical/rocks-toolbox
             rock-repo-commit: main
             rockfile-directory: mock_rock/1.0
-
