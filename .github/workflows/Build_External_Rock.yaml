@@ -12,9 +12,7 @@ jobs:
         uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@ROCKS-1452/oci-factory-refactor-build-rock-to-be-externally-reusable
         with:
             oci-archive-name: "external_mock-rock"
-            # rock-repo: clay-lake/mock-rock
-            rock-repo: https://git.savannah.gnu.org/git/screen.git
-            # rock-repo-commit: main
-            rock-repo-commit: master
-            rockfile-directory: /mock-rock/1.1/
+            rock-repo: canonical/rocks-toolbox
+            rock-repo-commit: main
+            rockfile-directory: /mock-rock/1.0/
 
