@@ -8,7 +8,7 @@ on:
 
 jobs:
     build:
-        uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@ROCKS-1452/oci-factory-refactor-build-rock-to-be-externally-reusable
+        uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml
         with:
             oci-archive-name: "external_mock-rock"
             rock-repo: canonical/rocks-toolbox
