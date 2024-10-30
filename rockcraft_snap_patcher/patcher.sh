@@ -14,7 +14,7 @@ craft_parts="../craft-parts/"  # Path to craft_providers repo
 
 
 # setup
-snap_rootfs="./.patcher/$(uuid)/"
+snap_rootfs=$(mktemp -d -p "./.patcher/")
 sudo mkdir -p "$snap_rootfs"
 
 # unpack rootfs
@@ -22,20 +22,22 @@ unsquashfs -f -d "$snap_rootfs" "$src_snap"
 snap_name=$(yq '.name' "$snap_rootfs/meta/snap.yaml")
 # snap_src_version=$(yq '.version' "$snap_rootfs/meta/snap.yaml")
 snap_arch=$(yq '.architectures[0]' "$snap_rootfs/meta/snap.yaml") #TODO: support multi arch?
+snap_python_bin=$(readlink -f "$snap_rootfs/bin/python")
+snap_python_name=$(basename $snap_python_bin) # used in locating craft libraries
 
 
 # modify snap rootfs
-rm -rf "$snap_rootfs/lib/python3.10/site-packages/rockcraft"
-rsync -r --chown=root:root "$rockcraft/rockcraft" "$snap_rootfs/lib/python3.10/site-packages/"
+rm -rf "$snap_rootfs/lib/$snap_python_name/site-packages/rockcraft"
+rsync -r --chown=root:root "$rockcraft/rockcraft" "$snap_rootfs/lib/$snap_python_name/site-packages/"
 
-rm -rf "$snap_rootfs/lib/python3.10/site-packages/craft_application"
-rsync -r --chown=root:root "$craft_application/craft_application" "$snap_rootfs/lib/python3.10/site-packages/"
+rm -rf "$snap_rootfs/lib/$snap_python_name/site-packages/craft_application"
+rsync -r --chown=root:root "$craft_application/craft_application" "$snap_rootfs/lib/$snap_python_name/site-packages/"
 
-rm -rf "$snap_rootfs/lib/python3.10/site-packages/craft_parts"
-rsync -r --chown=root:root "$craft_parts/craft_parts" "$snap_rootfs/lib/python3.10/site-packages/"
+rm -rf "$snap_rootfs/lib/$snap_python_name/site-packages/craft_parts"
+rsync -r --chown=root:root "$craft_parts/craft_parts" "$snap_rootfs/lib/$snap_python_name/site-packages/"
 
-rm -rf "$snap_rootfs/lib/python3.10/site-packages/craft_providers"
-rsync -r --chown=root:root "$craft_providers/craft_providers" "$snap_rootfs/lib/python3.10/site-packages/"
+rm -rf "$snap_rootfs/lib/$snap_python_name/site-packages/craft_providers"
+rsync -r --chown=root:root "$craft_providers/craft_providers" "$snap_rootfs/lib/$snap_python_name/site-packages/"
 
 # repack and install snap rootfs
 export snap_dst_version="local-patch-$(date +%s)"
