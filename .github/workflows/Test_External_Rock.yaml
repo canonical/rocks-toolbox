@@ -22,7 +22,6 @@ jobs:
               | sed 's/ghcr.io\/canonical\/oci-factory\///g' | tr ':' '_')"
           echo "oci-filename=$oci_filename" >> "$GITHUB_OUTPUT"
 
-
           if [[ "${{ inputs.cache-key }}" != "" ]]
           then
               source=oci:${{ env.TEST_IMAGE }}
