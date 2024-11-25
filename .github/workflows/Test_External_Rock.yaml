@@ -19,23 +19,23 @@ jobs:
         steps:
             - id: configure
                 run: |
-                oci_filename="$(echo "${{ env.TEST_IMAGE }}" \
-                    | sed 's/ghcr.io\/canonical\/oci-factory\///g' | tr ':' '_')"
-                echo "oci-filename=$oci_filename" >> "$GITHUB_OUTPUT"
+                    oci_filename="$(echo "${{ env.TEST_IMAGE }}" \
+                        | sed 's/ghcr.io\/canonical\/oci-factory\///g' | tr ':' '_')"
+                    echo "oci-filename=$oci_filename" >> "$GITHUB_OUTPUT"
 
 
-                if [[ "${{ inputs.cache-key }}" != "" ]]
-                then
-                    source=oci:${{ env.TEST_IMAGE }} 
-                else
-                    source=
-                fi
+                    if [[ "${{ inputs.cache-key }}" != "" ]]
+                    then
+                        source=oci:${{ env.TEST_IMAGE }} 
+                    else
+                        source=
+                    fi
 
-                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v $PWD:/workdir -w /workdir \
-                    ${{ env.SKOPEO_IMAGE }} \
-                    copy docker://${{ env.TEST_IMAGE }} \
-                    oci-archive:$oci_filename
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $PWD:/workdir -w /workdir \
+                        ${{ env.SKOPEO_IMAGE }} \
+                        copy docker://${{ env.TEST_IMAGE }} \
+                        oci-archive:$oci_filename
 
             - uses: actions/upload-artifact@v4
                 if: ${{ !cancelled() }}
