@@ -22,13 +22,6 @@ jobs:
               | sed 's/ghcr.io\/canonical\/oci-factory\///g' | tr ':' '_')"
           echo "oci-filename=$oci_filename" >> "$GITHUB_OUTPUT"
 
-          if [[ "${{ inputs.cache-key }}" != "" ]]
-          then
-              source=oci:${{ env.TEST_IMAGE }}
-          else
-              source=
-          fi
-
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               -v $PWD:/workdir -w /workdir \
               ${{ env.SKOPEO_IMAGE }} \
