@@ -44,7 +44,7 @@ jobs:
           retention-days: 1
 
   test-image:
-    uses: clay-lake/oci-factory/.github/workflows/Test-Rock.yaml@reusable_test_rock_workflow
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@ROCKS-1453/reusable_test_rock_workflow
     needs: [fetch-image]
     with:
       oci-archive-name: ${{ needs.configure.outputs.oci-filename }}
