@@ -47,4 +47,4 @@ jobs:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@ROCKS-1453/reusable_test_rock_workflow
     needs: [fetch-image]
     with:
-      oci-archive-name: ${{ needs.configure.outputs.oci-filename }}
+      oci-archive-name: ${{ needs.fetch-image.outputs.oci-filename }}
