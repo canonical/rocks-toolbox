@@ -1,0 +1,53 @@
+name: Test External Rock 
+
+on:
+    push:
+        paths:
+            - .github/workflows/Test_External_Rock.yaml
+    workflow_dispatch:
+
+
+env:
+    TEST_IMAGE: "ghcr.io/canonical/oci-factory/mock-rock:1.1-22.04_844"
+    SKOPEO_IMAGE: "quay.io/skopeo/stable:v1.15.1"
+
+jobs:
+    fetch-image:
+        runs-on: ubuntu-22.04
+        outputs:
+            oci-filename: ${{ steps.configure.outputs.oci-filename }} 
+        steps:
+        # - uses: actions/checkout@v4
+        - id: configure
+            run: |
+            oci_filename="$(echo "${{ env.TEST_IMAGE }}" \
+                | sed 's/ghcr.io\/canonical\/oci-factory\///g' | tr ':' '_')"
+            echo "oci-filename=$oci_filename" >> "$GITHUB_OUTPUT"
+
+
+            if [[ "${{ inputs.cache-key }}" != "" ]]
+            then
+                source=oci:${{ env.TEST_IMAGE }} 
+            else
+                source=
+            fi
+
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $PWD:/workdir -w /workdir \
+                ${{ env.SKOPEO_IMAGE }} \
+                copy docker://${{ env.TEST_IMAGE }} \
+                oci-archive:$oci_filename
+
+        - uses: actions/upload-artifact@v4
+            if: ${{ !cancelled() }}
+            with:
+            name: ${{ steps.configure.outputs.oci-filename }} 
+            path: ${{ steps.configure.outputs.oci-filename }} 
+            retention-days: 1
+
+
+    test-image:
+        uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@reusable_test_rock_workflow
+        needs: [fetch-image]
+        with:
+            oci-archive-name: ${{ needs.configure.outputs.oci-filename }} 
