@@ -68,7 +68,11 @@ from a local artifact or from an external location uploaded as an artifact. The
 workflow includes the following tests, which can be enabled or disabled as
 needed.
 
-- Testing OCI Compliance of Rock images using [Umoci](https://umo.ci/)
+- OCI compliance testing of images using [Umoci](https://umo.ci/). The image's
+  readability and layout are tested by unpacking and listing the image tags.
+- Black-box testing of images performed using Docker to create a container and
+  attempting to run the Pebble service manager. This test applies only to
+  images created with Rockcraft.
 - Testing image storage efficiency using [Dive](https://github.com/wagoodman/dive)
 - Scanning for vulnerabilities using [trivy](https://trivy.dev/)
 - Scanning for malware using [ClamAV](https://www.clamav.net/)
@@ -85,6 +89,10 @@ needed.
   - Artifact name to download for testing.
   - required
   - type: string
+- `test-oci-compliance`
+  - Enable Umoci OCI Image compliance test.
+  - optional, default: `true`
+  - type: boolean
 - `test-oci-compliance`
   - Enable Umoci OCI Image compliance test.
   - optional, default: `true`
