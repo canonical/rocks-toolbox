@@ -12,6 +12,6 @@ jobs:
     uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
     with:
       oci-archive-name: "mock-rock"
-      # rock-repo: canonical/rocks-toolbox
-      # rock-repo-commit: main
+      rock-repo: canonical/rocks-toolbox
+      rock-repo-commit: main
       rockfile-directory: mock_rock/1.0

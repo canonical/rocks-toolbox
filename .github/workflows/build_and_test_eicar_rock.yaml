@@ -18,7 +18,7 @@ jobs:
 
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
-    needs: [build-rock]
+    needs: [build]
     with:
       oci-archive-name: "eicar-rock"
       test-vulnerabilities: true

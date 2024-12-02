@@ -22,20 +22,20 @@ jobs:
             -v $PWD:/workdir -w /workdir \
             ${{ env.SKOPEO_IMAGE }} \
             copy docker://${{ env.TEST_IMAGE }} \
-            oci-archive:${{ env.TEST_IMAGE_FILENAME }}
+            oci-archive:test_image
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: ${{ env.TEST_IMAGE_FILENAME }}
-          path: ${{ env.TEST_IMAGE_FILENAME }}
+          name: test_image
+          path: test_image
           retention-days: 1
 
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
-    needs: [build-rock]
+    needs: [setup]
     with:
-      oci-archive-name: ${{ env.TEST_IMAGE_FILENAME }}
+      oci-archive-name: test_image
       test-vulnerabilities: true
       test-oci-compliance: true
       test-efficiency: true
