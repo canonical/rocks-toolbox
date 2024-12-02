@@ -31,7 +31,6 @@ jobs:
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     needs: [setup]
-    continue-on-error: true # we expect vulnerabilities scan to fail
     with:
       oci-archive-name: test_image
       test-black-box: false # will always fail since bkimminich/juice-shop is not a rock. 
@@ -39,3 +38,12 @@ jobs:
       test-malware: true
       test-oci-compliance: true
       test-vulnerabilities: true
+
+  end:
+    # we expect vulnerabilities scan to fail, so we add a final job so PR checks pass.
+    if: ${{ !cancelled() }}
+    needs: [test]
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          echo Workflow complete!

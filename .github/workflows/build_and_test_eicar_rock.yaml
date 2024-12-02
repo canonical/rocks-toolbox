@@ -16,7 +16,6 @@ jobs:
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     needs: [build]
-    continue-on-error: true # we expect malware scan to fail
     with:
       oci-archive-name: "eicar-rock"
       test-black-box: true
@@ -24,3 +23,12 @@ jobs:
       test-malware: true
       test-oci-compliance: true
       test-vulnerabilities: true
+
+  end:
+    # we expect malware scan to fail, so we add a final job so PR checks pass.
+    if: ${{ !cancelled() }}
+    needs: [test]
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          echo Workflow complete!
