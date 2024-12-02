@@ -19,7 +19,8 @@ jobs:
     continue-on-error: true # we expect malware scan to fail
     with:
       oci-archive-name: "eicar-rock"
-      test-vulnerabilities: true
-      test-oci-compliance: true
+      test-black-box: true
       test-efficiency: true
-      test_malware: true
+      test-malware: true
+      test-oci-compliance: true
+      test-vulnerabilities: true
