@@ -2,9 +2,6 @@ name: Build Mock Rock
 
 on:
   push:
-    paths:
-      - .github/workflows/build_mock_rock.yaml
-      - oci_factory_workflows/**
   workflow_dispatch:
 
 jobs:
