@@ -1,0 +1,27 @@
+name: Build and Test EICAR Rock
+
+on:
+  push:
+    paths:
+      - .github/workflows/build_and_test_eicar_rock.yaml
+      - oci_factory_workflows/**
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
+    with:
+      oci-archive-name: "eicar-rock"
+      rock-repo: canonical/rocks-toolbox
+      rock-repo-commit: rework_oci-factory_workflow_docs
+      rockfile-directory: eicar_rock/1.0/
+
+  test:
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
+    needs: [build-rock]
+    with:
+      oci-archive-name: "eicar-rock"
+      test-vulnerabilities: true
+      test-oci-compliance: true
+      test-efficiency: true
+      test_malware: true

@@ -1,0 +1,42 @@
+name: Test External Rock
+
+on:
+  push:
+    paths:
+      - .github/workflows/test_external_rock.yaml
+      - oci_factory_workflows/**
+  workflow_dispatch:
+
+env:
+  VULNERABILITY_REPORT_SUFFIX: '.vulnerability-report.json'
+  SKOPEO_IMAGE: 'quay.io/skopeo/stable:v1.15.1'
+  TEST_IMAGE: 'bkimminich/juice-shop'
+  TEST_IMAGE_FILENAME: 'juice-shop'
+
+jobs:
+  setup:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $PWD:/workdir -w /workdir \
+            ${{ env.SKOPEO_IMAGE }} \
+            copy docker://${{ env.TEST_IMAGE }} \
+            oci-archive:${{ env.TEST_IMAGE_FILENAME }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: ${{ env.TEST_IMAGE_FILENAME }}
+          path: ${{ env.TEST_IMAGE_FILENAME }}
+          retention-days: 1
+
+  test:
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
+    needs: [build-rock]
+    with:
+      oci-archive-name: ${{ env.TEST_IMAGE_FILENAME }}
+      test-vulnerabilities: true
+      test-oci-compliance: true
+      test-efficiency: true
+      test_malware: true

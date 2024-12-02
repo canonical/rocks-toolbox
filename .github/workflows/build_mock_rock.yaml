@@ -1,0 +1,17 @@
+name: Build Mock Rock
+
+on:
+  push:
+    paths:
+      - .github/workflows/build_mock_rock.yaml
+      - oci_factory_workflows/**
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
+    with:
+      oci-archive-name: "mock-rock"
+      # rock-repo: canonical/rocks-toolbox
+      # rock-repo-commit: main
+      rockfile-directory: mock_rock/1.0
