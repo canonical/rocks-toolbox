@@ -19,6 +19,7 @@ jobs:
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     needs: [build]
+    continue-on-error: true # we expect malware scan to fail
     with:
       oci-archive-name: "eicar-rock"
       test-vulnerabilities: true

@@ -34,6 +34,7 @@ jobs:
   test:
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     needs: [setup]
+    continue-on-error: true # we expect vulnerabilities scan to fail
     with:
       oci-archive-name: test_image
       test-vulnerabilities: true
