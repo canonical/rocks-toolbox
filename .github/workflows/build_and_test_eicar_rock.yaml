@@ -18,7 +18,6 @@ jobs:
     needs: [build]
     with:
       oci-archive-name: "eicar-rock"
-      test-black-box: true
       test-efficiency: true
       test-malware: true
       test-oci-compliance: true

@@ -33,7 +33,6 @@ jobs:
     needs: [setup]
     with:
       oci-archive-name: test_image
-      test-black-box: false # will always fail since bkimminich/juice-shop is not a rock. 
       test-efficiency: true
       test-malware: true
       test-oci-compliance: true
