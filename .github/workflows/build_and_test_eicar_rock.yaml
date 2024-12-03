@@ -18,10 +18,6 @@ jobs:
     needs: [build]
     with:
       oci-archive-name: "eicar-rock"
-      test-efficiency: true
-      test-malware: true
-      test-oci-compliance: true
-      test-vulnerabilities: true
 
   end:
     # we expect malware scan to fail, so we add a final job so PR checks pass.
