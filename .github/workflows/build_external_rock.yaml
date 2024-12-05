@@ -2,6 +2,8 @@ name: Build External Rock
 
 on:
   push:
+    paths:
+      - .github/workflows/build_external_rock.yaml
   workflow_dispatch:
 
 jobs:

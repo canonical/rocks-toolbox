@@ -2,6 +2,8 @@ name: Build Mock Rock
 
 on:
   push:
+    paths:
+      - .github/workflows/build_mock_rock.yaml
   workflow_dispatch:
 
 jobs:

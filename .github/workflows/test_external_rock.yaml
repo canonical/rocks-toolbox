@@ -2,6 +2,8 @@ name: Test External Rock
 
 on:
   push:
+    paths:
+      - .github/workflows/test_external_rock.yaml
   workflow_dispatch:
 
 env:
@@ -33,12 +35,3 @@ jobs:
     needs: [setup]
     with:
       oci-archive-name: test_image
-
-  end:
-    # we expect vulnerabilities scan to fail, so we add a final job so PR checks pass.
-    if: ${{ !cancelled() }}
-    needs: [test]
-    runs-on: ubuntu-22.04
-    steps:
-      - run: |
-          echo Workflow complete!
