@@ -1,9 +1,10 @@
-from .config.base import YAMLCheckConfigBase
-from pathlib import Path
-import logging
-
 import argparse
+import logging
+from pathlib import Path
 
+from .config.base import YAMLCheckConfigBase
+
+# TODO: display all available configs in help
 parser = argparse.ArgumentParser()
 
 parser.add_argument(

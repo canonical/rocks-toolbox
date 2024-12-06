@@ -1,9 +1,0 @@
-# python3 -m yaml_checker --config=OCIFactory demo/factory.yaml
-
-hello:
-  world: "42"
-  foo:
-    - "bar"
-    - "baz"
-    - "etc"
-  tricky_string: "it's a trap!"

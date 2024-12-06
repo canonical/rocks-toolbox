@@ -1,8 +1,0 @@
-# comment
-
-test:
-  test2: "1" # another comment
-  test3: [a, b, c]
-
-  # more comments
-  test4: [1, 2, 3]

@@ -1,10 +1,11 @@
 import fnmatch
-from io import StringIO
 import logging
+from io import StringIO
 from pathlib import Path
-from pydantic import BaseModel
-from ruyaml import YAML
 from typing import Any
+
+from pydantic import BaseModel
+from ruamel.yaml import YAML
 
 
 class YAMLCheckConfigReg(type):
@@ -27,7 +28,7 @@ class YAMLCheckConfigBase(metaclass=YAMLCheckConfigReg):
             extra = "allow"
 
     class Config:
-        """ruyaml.YAML configuration set before loading."""
+        """ruamel.yaml configuration set before loading."""
 
         preserve_quotes = True
         width = 80
@@ -49,7 +50,7 @@ class YAMLCheckConfigBase(metaclass=YAMLCheckConfigReg):
             if hasattr(self.yaml, attr):
                 setattr(self.yaml, attr, attr_val)
             else:
-                raise AttributeError(f"Invalid ruyaml.YAML attribute: {attr}")
+                raise AttributeError(f"Invalid ruamel.yaml attribute: {attr}")
 
     def load(self, yaml_str: str):
         """Load YAML data from string"""

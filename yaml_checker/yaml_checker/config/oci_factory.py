@@ -1,5 +1,7 @@
 import logging
-from ruyaml.scalarstring import SingleQuotedScalarString, DoubleQuotedScalarString
+
+from ruamel.yaml.scalarstring import (DoubleQuotedScalarString,
+                                      SingleQuotedScalarString)
 
 from .base import YAMLCheckConfigBase
 
