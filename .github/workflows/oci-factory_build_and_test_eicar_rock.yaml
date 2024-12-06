@@ -1,3 +1,4 @@
+# Warning: This workflow is designed to fail. When merging in a PR, pushing an empty commit will bypass checks and allow the PR to be merged.
 name: OCI Factory Workflows - Build and Test EICAR Rock
 
 on:
