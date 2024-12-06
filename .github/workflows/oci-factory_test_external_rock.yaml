@@ -1,0 +1,40 @@
+# Warning: This workflow is designed to fail. When merging in a PR, pushing an empty commit will bypass checks and allow the PR to be merged.
+name: OCI Factory Workflows - Test External Rock
+
+on:
+  push:
+    paths:
+      - .github/workflows/test_external_rock.yaml
+  workflow_dispatch:
+
+env:
+  VULNERABILITY_REPORT_SUFFIX: '.vulnerability-report.json'
+  SKOPEO_IMAGE: 'quay.io/skopeo/stable:v1.15.1'
+  TEST_IMAGE: 'bkimminich/juice-shop'
+  TEST_IMAGE_FILENAME: 'juice-shop'
+
+jobs:
+  setup:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $PWD:/workdir -w /workdir \
+            ${{ env.SKOPEO_IMAGE }} \
+            copy docker://${{ env.TEST_IMAGE }} \
+            oci-archive:test_image
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test_image
+          path: test_image
+          retention-days: 1
+
+  test:
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
+    needs: [setup]
+    with:
+      oci-archive-name: test_image
+      test-black-box: false # will always fail since bkimminich/juice-shop is not a rock. 
+
