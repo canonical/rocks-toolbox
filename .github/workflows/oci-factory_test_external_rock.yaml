@@ -1,4 +1,4 @@
-name: Test External Rock
+name: OCI Factory Workflows - Test External Rock
 
 on:
   push:

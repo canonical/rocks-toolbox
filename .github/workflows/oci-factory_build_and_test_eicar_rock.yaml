@@ -1,4 +1,4 @@
-name: Build and Test EICAR Rock
+name: OCI Factory Workflows - Build and Test EICAR Rock
 
 on:
   push:

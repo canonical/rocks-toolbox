@@ -1,4 +1,4 @@
-name: Build Mock Rock
+name: OCI Factory Workflows - Build Mock Rock
 
 on:
   push:

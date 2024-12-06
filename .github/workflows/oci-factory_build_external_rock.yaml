@@ -1,4 +1,4 @@
-name: Build External Rock
+name: OCI Factory Workflows - Build External Rock
 
 on:
   push:
