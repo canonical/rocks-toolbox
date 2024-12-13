@@ -1,3 +1,5 @@
 .vscode
 __pycache__
 *.rock
+.venv/
+yaml_checker/yaml_checker.egg-info
