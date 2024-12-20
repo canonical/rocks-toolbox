@@ -32,7 +32,7 @@ jobs:
           retention-days: 1
 
   test:
-    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@relocate_vulnerability_report
     needs: [setup]
     with:
       oci-archive-name: test_image
