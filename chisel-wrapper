@@ -55,18 +55,27 @@ prepare_dpkg_status() {
 		exit 1
 	fi
 
-	if [ -f "$CHISEL_DPKG_STATUS_FILE" ]; then
-		rm -f "$CHISEL_DPKG_STATUS_FILE"
-	fi
-
 	for f in "$dir"/*; do
 		is_deb="$(file "$f" | grep "Debian binary package" | cat)"
 		if [ -z "$is_deb" ]; then
 			continue
 		fi
-		dpkg-deb -f "$f" >> "$CHISEL_DPKG_STATUS_FILE"
-		echo "" >> "$CHISEL_DPKG_STATUS_FILE"
+		write_control_file "$f"
 	done
+}
+
+write_control_file() {
+	local f="$1"
+	local pkg
+
+	if [ -f "$CHISEL_DPKG_STATUS_FILE" ]; then
+		# Remove previous entry if it exists.
+		pkg="$(dpkg-deb -f "$f" Package)"
+		sed "/Package:\s*$pkg/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
+	fi
+
+	dpkg-deb -f "$f" >> "$CHISEL_DPKG_STATUS_FILE"
+	echo "" >> "$CHISEL_DPKG_STATUS_FILE"
 }
 
 while (( "$#" )); do
