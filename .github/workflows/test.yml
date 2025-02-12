@@ -44,13 +44,18 @@ jobs:
 
           test ! -f status
 
-          install openssl_bins
-          grep "^Package:.*$" status | wc -l | grep -q "3"            # must be 3 packages
+          install openssl_bins    # 3 new packages
+          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
+            sort | grep -Pz "libc6\nlibssl1.1\nopenssl"
 
-          install base-files_base
-          grep "^Package:.*$" status | wc -l | grep -q "4"            # must be 4 packages
-          grep "^Package:.*$" status | tail -1 | grep -q "base-files" # must be last entry
+          install base-files_base # 1 more package
+          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
+            sort | grep -Pz "base-files\nlibc6\nlibssl1.1\nopenssl"
+          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
+            tail -1 | grep -q "base-files" # must be last entry
 
-          install libc6_libs
-          grep "^Package:.*$" status | wc -l | grep -q "4"            # must be 4 packages
-          grep "^Package:.*$" status | tail -1 | grep -q "libc6"      # must be last entry
+          install libc6_libs      # no new package
+          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
+            sort | grep -Pz "base-files\nlibc6\nlibssl1.1\nopenssl"
+          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
+            tail -1 | grep -q "libc6"      # must be last entry
