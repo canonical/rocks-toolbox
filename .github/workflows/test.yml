@@ -29,6 +29,8 @@ jobs:
           sudo mv chisel /usr/local/bin/
       - name: Test chisel-wrapper
         run: |
+          set -ex
+
           install() {
             ./chisel-wrapper --generate-dpkg-status status -- \
               --release ubuntu-20.04 --root "$(mktemp -d)" \
