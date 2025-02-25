@@ -16,7 +16,6 @@ jobs:
       - run: pytest rockcraft_lpci_build/tests/ -vvv -s -rP --log-cli-level=INFO
 
   chisel-wrapper:
-    name: Chisel wrapper
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
