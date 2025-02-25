@@ -20,42 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Chisel
-        env:
-          version: v1.1.0
+      - uses: actions/setup-go@v5
+      - name: Install chisel
+        run: go install github.com/canonical/chisel/cmd/chisel@latest
+      - name: Install syft
         run: |
-          wget "https://github.com/canonical/chisel/releases/download/${{ env.version }}/chisel_${{ env.version }}_linux_amd64.tar.gz"
-          tar zxvf "chisel_${{ env.version }}_linux_amd64.tar.gz"
-          sudo mv chisel /usr/local/bin/
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
+          sudo sh -s -- -b /usr/local/bin
       - name: Test chisel-wrapper
-        run: |
-          set -ex
-
-          install() {
-            ./chisel-wrapper --generate-dpkg-status status -- \
-              --release ubuntu-20.04 --root "$(mktemp -d)" \
-              "$@"
-          }
-
-          cleanup() {
-            rm -f status
-          }
-          trap cleanup EXIT
-
-          test ! -f status
-
-          install openssl_bins    # 3 new packages
-          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
-            sort | grep -Pz "libc6\nlibssl1.1\nopenssl"
-
-          install base-files_base # 1 more package
-          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
-            sort | grep -Pz "base-files\nlibc6\nlibssl1.1\nopenssl"
-          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
-            tail -1 | grep -q "base-files" # must be last entry
-
-          install libc6_libs      # no new package
-          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
-            sort | grep -Pz "base-files\nlibc6\nlibssl1.1\nopenssl"
-          sed -n "s/^Package:\s*\(.*\)$/\1/p" status | \
-            tail -1 | grep -q "libc6"      # must be last entry
+        run: ./tests/chisel-wrapper/runtest
