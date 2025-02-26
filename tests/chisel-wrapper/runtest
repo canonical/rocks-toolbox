@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Needs chisel and syft.
+
+set -eux
+
+STATUS_FILE="$(mktemp)"
+ROOTFS="$(mktemp -d)"
+
+install() {
+    ./chisel-wrapper --generate-dpkg-status "$STATUS_FILE" -- \
+        --release ubuntu-20.04 --root "$ROOTFS" \
+        "$@"
+}
+
+place_status() {
+    mkdir -p "$ROOTFS/var/lib/dpkg"
+    cp "$STATUS_FILE" "$ROOTFS/var/lib/dpkg/status"
+}
+
+check_syft() {
+    local match="$1"
+    syft "$ROOTFS" -o syft-table -q | grep deb | cut -d' ' -f1  | \
+        grep -Pz "$match"
+}
+
+cleanup() {
+    rm -f "$STATUS_FILE"
+}
+trap cleanup EXIT
+
+install openssl_bins    # 3 new packages
+place_status
+check_syft "libc6\nlibssl1.1\nopenssl"
+
+install base-files_base # 1 more package
+place_status
+check_syft "base-files\nlibc6\nlibssl1.1\nopenssl"
+
+install libc6_libs      # no new package
+place_status
+check_syft "base-files\nlibc6\nlibssl1.1\nopenssl"
