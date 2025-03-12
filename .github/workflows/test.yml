@@ -37,4 +37,6 @@ jobs:
       - name: Install chisel
         run: go install github.com/canonical/chisel/cmd/chisel@latest
       - name: Test security-manifest
-        run: ./tests/security-manifest/runtest
+        run: |
+          export WRAPPER_BIN=./chisel-wrapper
+          ./tests/security-manifest/runtest
