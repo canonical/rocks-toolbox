@@ -64,14 +64,14 @@ format_status() {
         }
         }
 
-        # Default source to package if Source field is missing
-        if (source == "") { source = package; source_version = version; }
-
         # Clean field values
         gsub(/^Status: /, "", status);
         gsub(/^Package: /, "", package);
         gsub(/^Version: /, "", version);
         gsub(/^Source: /, "", source);
+
+        # Default source to package if Source field is missing
+        if (source == "") { source = package; source_version = version; }
 
         # Print formatted output like dpkg-query
         printf "%s,%s,%s,%s,%s\n", status, package, version, source, source_version;
@@ -82,7 +82,11 @@ format_status() {
 create_manifest() {
     echo "Creating security manifest"
     mkdir -p $ROOTFS/usr/share/rocks
-    (echo "# os-release" && cat $ROOTFS/etc/os-release && echo "# dpkg-query" && format_status) > $ROOTFS/usr/share/rocks/dpkg.query
+
+    if [ -f $ROOTFS/etc/os-release ]; then
+        (echo "# os-release" && cat $ROOTFS/etc/os-release) >> $ROOTFS/usr/share/rocks/dpkg.query
+    fi
+    (echo "# dpkg-query" && format_status) >> $ROOTFS/usr/share/rocks/dpkg.query
 }
 
 while (( "$#" )); do
