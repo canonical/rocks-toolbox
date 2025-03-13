@@ -5,7 +5,7 @@ set -eux
 ROOTFS="$(mktemp -d)"
 
 create_manifest() {
-    ./security-manifest --cleanup --rootfs "$ROOTFS" -- --release ubuntu-24.04 "$@"
+    ./security-manifest/security-manifest --cleanup --rootfs "$ROOTFS" -- --release ubuntu-24.04 "$@"
 }
 
 cleanup() {
