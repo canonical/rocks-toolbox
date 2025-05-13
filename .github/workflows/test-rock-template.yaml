@@ -1,0 +1,135 @@
+name: Build and Test Rock Template
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  validate-rockcraft-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+        with:
+          repository: canonical/rocks-template
+          ref: main
+
+      - name: Install dependencies
+        run: |
+          sudo snap install rockcraft --classic
+
+      - name: Generate rockcraft.yaml from rockcraft init
+        run: |
+          mkdir -p rocks2/my-rock/0.1 && cd $_
+          rockcraft init
+
+      - name: Compare generated and existing rockcraft.yaml
+        run: |
+          # Remove TODOs from template file
+          sed -i '/^\s*# TODO/d' rocks/my-rock/0.1/rockcraft.yaml
+          sed -i '0,/^\s*$/ { /^\s*$/d }' rocks/my-rock/0.1/rockcraft.yaml
+
+          # Compare the template with the rockcraft init one
+          diff -q rocks/my-rock/0.1/rockcraft.yaml rocks2/my-rock/0.1/rockcraft.yaml
+
+
+  build:
+    needs: validate-rockcraft-yaml
+    uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
+    with:
+      rock-repo: canonical/rocks-template
+      rock-repo-commit: main
+      rockfile-directory: rocks/my-rock/0.1
+      oci-archive-name: my-rock_0.1_amd64.rock
+      arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
+
+
+  test:
+    needs: build
+    uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
+    with:
+      oci-archive-name: my-rock_0.1_amd64.rock
+
+
+  notify:
+    name: Post workflow status to Mattermost
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - validate-rockcraft-yaml
+      - build
+      - test
+
+    steps:
+      - name: Determine overall result
+        if: >
+          needs.validate-rockcraft-yaml.result != 'success' ||
+          needs.build.result != 'success' ||
+          needs.test.result != 'success'
+        id: result
+        env:
+          VAL_RESULT: ${{ needs.validate-rockcraft-yaml.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          set -eu
+
+          val_result="${VAL_RESULT:-skipped}"
+          build_result="${BUILD_RESULT:-skipped}"
+          test_result="${TEST_RESULT:-skipped}"
+
+          if [[ "$val_result" != "success" ]]; then
+            echo "result=$val_result" >> $GITHUB_OUTPUT
+          elif [[ "$build_result" != "success" ]]; then
+            echo "result=$build_result" >> $GITHUB_OUTPUT
+          else
+            echo "result=$test_result" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create the message
+        if: steps.result.outputs.result 
+        run: |
+          set -eu
+
+          result="${{ steps.result.outputs.result }}"
+          case "$result" in
+            failure) msg_icon=":x:" ;;
+            success) msg_icon=":white_check_mark:" ;;
+            cancelled) msg_icon=":no_entry_sign:" ;;
+            *) msg_icon=":grey_question:" ;;
+          esac
+
+          msg=$(cat << EOF
+          ##### $msg_icon GitHub Workflow '${{ github.workflow }}' execution [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) has ended with the status \`$result\`, for:
+            - Project: [${{ github.repository }}](${{ github.server_url }}/${{ github.repository }})
+            - Branch: [${{ github.ref_name }}](${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }})
+            - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}); _${{ github.event.head_commit.message }}_
+            - Triggered by: ${{ github.triggering_actor }}
+          EOF
+          )
+
+          jq -n --arg message "$msg" >mattermost.json '
+            {
+              channel_id: "${{ secrets.MM_CHANNEL_ID }}",
+              message: $message,
+            }
+          '
+
+      - name: Send the message to Mattermost
+        if: steps.result.outputs.result 
+        run: |
+          set -eu
+
+          log="$(mktemp)"
+          HTTP_CODE="$(curl -i -o "$log" --write-out "%{http_code}" \
+              -X POST -H 'Content-Type: application/json' \
+              -H "Authorization: Bearer ${{ secrets.MM_ACCESS_TOKEN }}" \
+              "${{ secrets.MM_SERVER }}/api/v4/posts" \
+              -d @mattermost.json)"
+
+          if [[ "${HTTP_CODE}" -lt 200 || "${HTTP_CODE}" -gt 299 ]] ; then
+              echo "ERROR: unable to post message into Mattermost channel"
+              cat "$log"
+              exit 22
+          fi
