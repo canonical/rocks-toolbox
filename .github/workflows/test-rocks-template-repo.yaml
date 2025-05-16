@@ -1,4 +1,4 @@
-name: Build and Test Rock Template
+name: Test Rocks Template Repository
 
 on:
   workflow_dispatch:
