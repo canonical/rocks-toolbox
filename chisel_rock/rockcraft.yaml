@@ -1,0 +1,28 @@
+name: chisel
+summary: Chisel rock
+description: A chiselled rock containing Chisel
+version: "v1.0.0"
+license: AGPL-3.0
+
+base: bare
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+  arm64:
+
+parts:
+  chisel:
+    plugin: go
+    source: https://github.com/canonical/chisel
+    source-type: git
+    source-tag: "v1.0.0"
+    build-snaps:
+      - go/1.23/stable
+    go-generate:
+      - ./cmd
+    stage-packages:
+      - libc6_libs
+      - ca-certificates_data
+      - dash_bins
+    stage:
+      - -bin/chrorder
