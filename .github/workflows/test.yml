@@ -28,3 +28,15 @@ jobs:
           sudo sh -s -- -b /usr/local/bin
       - name: Test chisel-wrapper
         run: ./tests/chisel-wrapper/runtest
+
+  security-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+      - name: Install chisel
+        run: go install github.com/canonical/chisel/cmd/chisel@latest
+      - name: Test security-manifest
+        run: |
+          export WRAPPER_BIN=./chisel-wrapper
+          ./tests/security-manifest/runtest
