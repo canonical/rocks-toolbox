@@ -28,3 +28,11 @@ jobs:
           sudo sh -s -- -b /usr/local/bin
       - name: Test chisel-wrapper
         run: ./tests/chisel-wrapper/runtest
+
+  chisel-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+      - name: Test chisel-tools
+        run: cd chisel-tools && go test ./...
