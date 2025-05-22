@@ -41,6 +41,7 @@ jobs:
 
           # Compare the template with the rockcraft init one
           diff -q rocks/my-rock/0.1/spread.yaml rocks2/my-rock/0.1/spread.yaml
+          diff -q rocks/my-rock/0.1/spread/.extension rocks2/my-rock/0.1/spread/.extension
           diff -q rocks/my-rock/0.1/spread/test/task.yaml rocks2/my-rock/0.1/spread/general/test/task.yaml
 
 
