@@ -6,7 +6,7 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  validate-rockcraft-yaml:
+  validate-template-files:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target repo
@@ -19,10 +19,11 @@ jobs:
         run: |
           sudo snap install rockcraft --classic
 
-      - name: Generate rockcraft.yaml from rockcraft init
+      - name: Generate files from rockcraft init
         run: |
           mkdir -p rocks2/my-rock/0.1 && cd $_
           rockcraft init
+          rockcraft init --profile=test
 
       - name: Compare generated and existing rockcraft.yaml
         run: |
@@ -33,9 +34,18 @@ jobs:
           # Compare the template with the rockcraft init one
           diff -q rocks/my-rock/0.1/rockcraft.yaml rocks2/my-rock/0.1/rockcraft.yaml
 
+      - name: Compare generated and existing test files
+        run: |
+          # Modify the spread.yaml suite to match the init command structure
+          sed -i 's|spread/|spread/general/|g' rocks/my-rock/0.1/spread.yaml
+
+          # Compare the template with the rockcraft init one
+          diff -q rocks/my-rock/0.1/spread.yaml rocks2/my-rock/0.1/spread.yaml
+          diff -q rocks/my-rock/0.1/spread/test/task.yaml rocks2/my-rock/0.1/spread/general/test/task.yaml
+
 
   build:
-    needs: validate-rockcraft-yaml
+    needs: validate-template-files
     uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
     with:
       rock-repo: canonical/rocks-template
@@ -57,19 +67,19 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - validate-rockcraft-yaml
+      - validate-template-files
       - build
       - test
 
     steps:
       - name: Determine overall result
         if: >
-          needs.validate-rockcraft-yaml.result != 'success' ||
+          needs.validate-template-files.result != 'success' ||
           needs.build.result != 'success' ||
           needs.test.result != 'success'
         id: result
         env:
-          VAL_RESULT: ${{ needs.validate-rockcraft-yaml.result }}
+          VAL_RESULT: ${{ needs.validate-template-files.result }}
           BUILD_RESULT: ${{ needs.build.result }}
           TEST_RESULT: ${{ needs.test.result }}
         run: |
