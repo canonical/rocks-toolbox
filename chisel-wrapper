@@ -1,10 +1,48 @@
 #!/bin/bash
 
+# This wrapper script performs "chisel cut" operation on specified slices.
+# And if specified in OPTIONS, it performs various tasks such as generating
+# a dpkg status file for the installed file system.
+#
+# It takes in a few options as specified below. But every CLI argument after
+# -- (double dash) will be passed to "chisel cut".
+#
+# [OPTIONS]
+#
+#   --generate-dpkg-status <path>
+#       Generate a dpkg status file at the specified <path>.
+#
+#   -h, --help
+#       Print this help information and quit.
+#
+# ENVIRONMENT VARIABLES
+#
+#   CHISEL_BIN
+#       Set CHISEL_BIN to the location of the chisel binary.
+#       By default, it will look for "chisel" in PATH.
+#
+# EXAMPLES
+#
+#   The following command creates a root file system with Chisel and also
+#   generates a DPKG status file at /var/lib/dpkg/status.
+#
+#       chisel-wrapper                                \
+#         --generate-dpkg-status /var/lib/dpkg/status \ # Passed to chisel-wrapper
+#         --                                          \ # Everything below passed to chisel
+#         --arch amd64                                \
+#         --release ubuntu-24.04                      \
+#         --root /rootfs                              \
+#         python3_standard
+
 set -eu
 
 CHISEL_BIN="${CHISEL_BIN:-"chisel"}"
 
+# Use a new, distinct and temporary directory to store the cache, so that we
+# can look at the files downloaded by Chisel and parse info about the .debs.
 CHISEL_CACHE_DIR="$(mktemp -d)"
+
+# This is set to the value of --generate-dpkg-status, if provided.
 CHISEL_DPKG_STATUS_FILE=""
 
 print_usage() {
@@ -38,6 +76,7 @@ cleanup() {
 		rm -rf "$CHISEL_CACHE_DIR"
 	fi
 }
+# Cleanup on EXIT.
 trap cleanup EXIT
 
 print_error() {
@@ -45,16 +84,22 @@ print_error() {
 }
 
 install_slices() {
+	# Chisel uses the XDG_CACHE_HOME env variable as the cache directory.
 	XDG_CACHE_HOME="$CHISEL_CACHE_DIR" $CHISEL_BIN cut "$@"
 }
 
 prepare_dpkg_status() {
+	# Chisel cache blobs are located at <cache-dir>/chisel/sha256/ directory.
 	dir="$CHISEL_CACHE_DIR/chisel/sha256"
 	if [ ! -d "$dir" ]; then
 		print_error "could not find the chisel cache at ${dir}"
 		exit 1
 	fi
 
+	# Go over each file in the cache blob directory and figure out which files
+	# are .debs i.e. Debian binary package. For each of those files, parse the
+	# control file and append it to the dpkg status file we are creating since
+	# a dpkg status file is simply a concatenation of control files of .debs.
 	for f in "$dir"/*; do
 		is_deb="$(file "$f" | grep "Debian binary package" | cat)"
 		if [ -z "$is_deb" ]; then
@@ -69,15 +114,30 @@ write_control_file() {
 	local pkg
 
 	if [ -f "$CHISEL_DPKG_STATUS_FILE" ]; then
-		# Remove previous entry if it exists.
+		# If the dpkg status file already contains an entry for the package, erase
+		# the entry. In a dpkg status file, the entries are separated by blank
+		# lines. It looks a bit like this:
+		#
+		#    Package: foo
+		#    ...
+		#
+		#    Package: bar
+		#    ...
+		#
+		# So we match everything from "Package: foo" (inclusive) up to the first
+		# blank line we see, and then just delete those lines.
 		pkg="$(dpkg-deb -f "$f" Package)"
 		sed "/Package:\s*$pkg/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
 	fi
 
+	# Append the control info to the dpkg status file.  Additionally, append a
+	# blank line to separate consecutive control info.
 	dpkg-deb -f "$f" >> "$CHISEL_DPKG_STATUS_FILE"
 	echo "" >> "$CHISEL_DPKG_STATUS_FILE"
 }
 
+# Parse CLI arguments.
+# NOTE: be careful on the number of "shift".
 while (( "$#" )); do
 	case "$1" in
 		--generate-dpkg-status)
@@ -107,8 +167,13 @@ while (( "$#" )); do
 	esac
 done
 
+# Invoke Chisel and install the specified slices with specified options.
 install_slices "$@"
 
+# If --generate-dpkg-status is specified, prepare the dpkg status file.
+#
+# NOTE: this MUST be done after the slices are installed as we read the
+#       cache directory to accomplish this.
 if [ -n "$CHISEL_DPKG_STATUS_FILE" ]; then
 	prepare_dpkg_status
 fi
