@@ -10,8 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
+          token: ${{ secrets.ROCKSBOT_REPO_CLONER }}
           repository: canonical/rocks-template
           ref: main
 
@@ -49,6 +50,8 @@ jobs:
       rockfile-directory: rocks/my-rock-name/0.1
       oci-archive-name: my-rock-name_0.1_amd64.rock
       arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
+    secrets:
+      source-github-token: ${{ secrets.ROCKSBOT_REPO_CLONER }}
 
 
   test:
