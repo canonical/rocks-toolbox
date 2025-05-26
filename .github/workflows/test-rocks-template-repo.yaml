@@ -12,6 +12,7 @@ jobs:
       - name: Checkout target repo
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.ROCKSBOT_REPO_CLONER }}
           repository: canonical/rocks-template
           ref: main
 
