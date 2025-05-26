@@ -44,6 +44,8 @@ jobs:
       rockfile-directory: rocks/my-rock/0.1
       oci-archive-name: my-rock_0.1_amd64.rock
       arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
+    secrets:
+      source-github-token: ${{ secrets.ROCKSBOT_REPO_CLONER }}
 
 
   test:
