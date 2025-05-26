@@ -21,28 +21,23 @@ jobs:
 
       - name: Generate files from rockcraft init
         run: |
-          mkdir -p rocks2/my-rock/0.1 && cd $_
+          mkdir -p rocks2/my-rock-name/0.1 && cd $_
           rockcraft init
           rockcraft init --profile=test
 
-      - name: Compare generated and existing rockcraft.yaml
+      - name: Compare generated and existing files
         run: |
-          # Remove TODOs from template file
-          sed -i '/^\s*# TODO/d' rocks/my-rock/0.1/rockcraft.yaml
-          sed -i '0,/^\s*$/ { /^\s*$/d }' rocks/my-rock/0.1/rockcraft.yaml
+          # Remove TODOs from rockcraft.yaml template file
+          sed -i '/^\s*# TODO/d' rocks/my-rock-name/0.1/rockcraft.yaml
+          sed -i '0,/^\s*$/ { /^\s*$/d }' rocks/my-rock-name/0.1/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q rocks/my-rock/0.1/rockcraft.yaml rocks2/my-rock/0.1/rockcraft.yaml
-
-      - name: Compare generated and existing test files
-        run: |
-          # Modify the spread.yaml suite to match the init command structure
-          sed -i 's|spread/|spread/general/|g' rocks/my-rock/0.1/spread.yaml
+          diff -q rocks/my-rock-name/0.1/rockcraft.yaml rocks2/my-rock-name/0.1/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q rocks/my-rock/0.1/spread.yaml rocks2/my-rock/0.1/spread.yaml
-          diff -q rocks/my-rock/0.1/spread/.extension rocks2/my-rock/0.1/spread/.extension
-          diff -q rocks/my-rock/0.1/spread/test/task.yaml rocks2/my-rock/0.1/spread/general/test/task.yaml
+          diff -q rocks/my-rock-name/0.1/spread.yaml rocks2/my-rock-name/0.1/spread.yaml
+          diff -q rocks/my-rock-name/0.1/spread/.extension rocks2/my-rock-name/0.1/spread/.extension
+          diff -q rocks/my-rock-name/0.1/spread/general/test/task.yaml rocks2/my-rock-name/0.1/spread/general/test/task.yaml
 
 
   build:
@@ -51,8 +46,8 @@ jobs:
     with:
       rock-repo: canonical/rocks-template
       rock-repo-commit: main
-      rockfile-directory: rocks/my-rock/0.1
-      oci-archive-name: my-rock_0.1_amd64.rock
+      rockfile-directory: rocks/my-rock-name/0.1
+      oci-archive-name: my-rock-name_0.1_amd64.rock
       arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
 
 
@@ -60,7 +55,7 @@ jobs:
     needs: build
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     with:
-      oci-archive-name: my-rock_0.1_amd64.rock
+      oci-archive-name: my-rock-name_0.1_amd64.rock
 
 
   notify:
