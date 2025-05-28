@@ -32,7 +32,7 @@ jobs:
           sed -i '0,/^\s*$/ { /^\s*$/d }' my-rock/0.1/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q my-rock/0.1/rockcraft.yaml my-rock/0.1/rockcraft.yaml
+          diff -q my-rock/0.1/rockcraft.yaml my-rock2/0.1/rockcraft.yaml
 
 
   build:
