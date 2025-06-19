@@ -70,7 +70,7 @@ jobs:
           key: ${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Upload rock
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rock
           path: ${{ needs.build.outputs.oci-archive }}
