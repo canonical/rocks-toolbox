@@ -6,7 +6,7 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  validate-rockcraft-yaml:
+  validate-template-files:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target repo
@@ -20,29 +20,35 @@ jobs:
         run: |
           sudo snap install rockcraft --classic
 
-      - name: Generate rockcraft.yaml from rockcraft init
+      - name: Generate files from rockcraft init
         run: |
-          mkdir -p my-rock2/0.1 && cd $_
+          mkdir -p my-rock-name2/0.1 && cd $_
           rockcraft init
+          rockcraft init --profile=test
 
-      - name: Compare generated and existing rockcraft.yaml
+      - name: Compare generated and existing files
         run: |
-          # Remove TODOs from template file
-          sed -i '/^\s*# TODO/d' my-rock/0.1/rockcraft.yaml
-          sed -i '0,/^\s*$/ { /^\s*$/d }' my-rock/0.1/rockcraft.yaml
+          # Remove TODOs from rockcraft.yaml template file
+          sed -i '/^\s*# TODO/d' my-rock-name/0.1/rockcraft.yaml
+          sed -i '0,/^\s*$/ { /^\s*$/d }' my-rock-name/0.1/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q my-rock/0.1/rockcraft.yaml my-rock2/0.1/rockcraft.yaml
+          diff -q my-rock-name/0.1/rockcraft.yaml my-rock-name2/0.1/rockcraft.yaml
+
+          # Compare the template with the rockcraft init one
+          diff -q my-rock-name/0.1/spread.yaml my-rock-name2/0.1/spread.yaml
+          diff -q my-rock-name/0.1/spread/.extension my-rock-name2/0.1/spread/.extension
+          diff -q my-rock-name/0.1/spread/general/test/task.yaml my-rock-name2/0.1/spread/general/test/task.yaml
 
 
   build:
-    needs: validate-rockcraft-yaml
+    needs: validate-template-files
     uses: canonical/oci-factory/.github/workflows/Build-Rock.yaml@main
     with:
       rock-repo: canonical/rocks-template
       rock-repo-commit: main
-      rockfile-directory: my-rock/0.1
-      oci-archive-name: my-rock_0.1_amd64.rock
+      rockfile-directory: my-rock-name/0.1
+      oci-archive-name: my-rock-name_0.1_amd64.rock
       arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
     secrets:
       source-github-token: ${{ secrets.ROCKSBOT_REPO_CLONER }}
@@ -52,7 +58,7 @@ jobs:
     needs: build
     uses: canonical/oci-factory/.github/workflows/Test-Rock.yaml@main
     with:
-      oci-archive-name: my-rock_0.1_amd64.rock
+      oci-archive-name: my-rock-name_0.1_amd64.rock
 
 
   notify:
@@ -60,19 +66,19 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - validate-rockcraft-yaml
+      - validate-template-files
       - build
       - test
 
     steps:
       - name: Determine overall result
         if: >
-          needs.validate-rockcraft-yaml.result != 'success' ||
+          needs.validate-template-files.result != 'success' ||
           needs.build.result != 'success' ||
           needs.test.result != 'success'
         id: result
         env:
-          VAL_RESULT: ${{ needs.validate-rockcraft-yaml.result }}
+          VAL_RESULT: ${{ needs.validate-template-files.result }}
           BUILD_RESULT: ${{ needs.build.result }}
           TEST_RESULT: ${{ needs.test.result }}
         run: |
