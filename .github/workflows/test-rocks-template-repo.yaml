@@ -22,23 +22,23 @@ jobs:
 
       - name: Generate files from rockcraft init
         run: |
-          mkdir -p my-rock-name2/0.1 && cd $_
+          mkdir -p my-rock-name2/0.1-24.04 && cd $_
           rockcraft init
           rockcraft init --profile=test
 
       - name: Compare generated and existing files
         run: |
           # Remove TODOs from rockcraft.yaml template file
-          sed -i '/^\s*# TODO/d' my-rock-name/0.1/rockcraft.yaml
-          sed -i '0,/^\s*$/ { /^\s*$/d }' my-rock-name/0.1/rockcraft.yaml
+          sed -i '/^\s*# TODO/d' my-rock-name/0.1-24.04/rockcraft.yaml
+          sed -i '0,/^\s*$/ { /^\s*$/d }' my-rock-name/0.1-24.04/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q my-rock-name/0.1/rockcraft.yaml my-rock-name2/0.1/rockcraft.yaml
+          diff -q my-rock-name/0.1-24.04/rockcraft.yaml my-rock-name2/0.1-24.04/rockcraft.yaml
 
           # Compare the template with the rockcraft init one
-          diff -q my-rock-name/0.1/spread.yaml my-rock-name2/0.1/spread.yaml
-          diff -q my-rock-name/0.1/spread/.extension my-rock-name2/0.1/spread/.extension
-          diff -q my-rock-name/0.1/spread/general/test/task.yaml my-rock-name2/0.1/spread/general/test/task.yaml
+          diff -q my-rock-name/0.1-24.04/spread.yaml my-rock-name2/0.1-24.04/spread.yaml
+          diff -q my-rock-name/0.1-24.04/spread/.extension my-rock-name2/0.1-24.04/spread/.extension
+          diff -q my-rock-name/0.1-24.04/spread/general/test/task.yaml my-rock-name2/0.1-24.04/spread/general/test/task.yaml
 
 
   build:
@@ -47,7 +47,7 @@ jobs:
     with:
       rock-repo: canonical/rocks-template
       rock-repo-commit: main
-      rockfile-directory: my-rock-name/0.1
+      rockfile-directory: my-rock-name/0.1-24.04
       oci-archive-name: my-rock-name_0.1_amd64.rock
       arch-map: '{"amd64": ["ubuntu-latest"], "arm64": ["ubuntu-24.04-arm"]}'
     secrets:
