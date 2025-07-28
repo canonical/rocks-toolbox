@@ -28,7 +28,7 @@ jobs:
         with:
           path: rockcraft_rock
           verbosity: debug
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         with:
           path: ${{ steps.rockcraft.outputs.rock }}
           key: ${{ github.run_id }}
@@ -40,7 +40,7 @@ jobs:
     env:
       TEST_DOCKER_IMAGE: "test:latest"
     steps:
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: ${{ needs.build.outputs.oci-archive }}
           key: ${{ github.run_id }}
@@ -64,7 +64,7 @@ jobs:
     needs: [build, test]
     if: ${{ github.event_name != 'pull_request' }}
     steps:
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: ${{ needs.build.outputs.oci-archive }}
           key: ${{ github.run_id }}
