@@ -13,7 +13,7 @@ jobs:
       oci-archive: ${{ steps.rockcraft.outputs.rock }}
       image-tag: ${{ steps.get-version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: get-version
         run: |
           tag="$(cat rockcraft_rock/rockcraft.yaml \
