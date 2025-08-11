@@ -10,7 +10,7 @@ jobs:
   test-rockcraft-lpci-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
       - run: pip install -r rockcraft_lpci_build/requirements.test.txt
       - run: pytest rockcraft_lpci_build/tests/ -vvv -s -rP --log-cli-level=INFO
@@ -18,7 +18,7 @@ jobs:
   chisel-wrapper:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
       - name: Install chisel
         run: go install github.com/canonical/chisel/cmd/chisel@latest
