@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
       - name: Install chisel
         run: go install github.com/canonical/chisel/cmd/chisel@latest
       - name: Install syft
