@@ -175,7 +175,8 @@ class RockcraftLpciBuilds:
                 log.write(ci_build_logs.text.encode())
 
                 with open(os.environ.get("GITHUB_OUTPUT", "/dev/stdout"), "a", encoding="utf-8") as gh_out:
-                    gh_out.write(f"build_log={log.name}\n")
+                    logging.info("Writing build-log=%s to GITHUB_OUTPUT", log.name)
+                    gh_out.write(f"build-log={log.name}\n")
 
         else:
             logging.warning(
