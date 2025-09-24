@@ -174,6 +174,9 @@ class RockcraftLpciBuilds:
                 logging.info("Build log save at %s", log.name)
                 log.write(ci_build_logs.text.encode())
 
+                with open(os.environ.get("GITHUB_OUTPUT", "/dev/stdout"), "a", encoding="utf-8") as gh_out:
+                    gh_out.write(f"build_log={log.name}\n")
+
         else:
             logging.warning(
                 "Unable to get logs. build_log_url not in %s.", ci_build.web_link
