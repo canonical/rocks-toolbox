@@ -1,0 +1,139 @@
+#!/bin/bash
+
+set -eu
+
+WRAPPER_BIN="${WRAPPER_BIN:-"chisel-wrapper"}"
+
+ROOTFS="./rootfs"
+CLEANUP=0
+
+
+print_usage() {
+	cat <<- EOF
+	Usage: $(basename "$0") [OPTIONS] <slice names..>
+
+	This wrapper script uses the chisel wrapper to generate a security
+    manifest based on dpkg status.
+
+	Every argument after -- will be passed to the chisel wrapper.
+
+	[OPTIONS]
+
+	  --rootfs <path>
+	      directory where chisel rootfs will be created
+
+      --cleanup
+          clean the rootfs and move the manifest to current directory
+
+	  -h, --help
+	      Print this help information and quit.
+    ENVIRONMENT VARIABLES
+
+	  WRAPPER_BIN
+	      Set WRAPPER_BIN to the location of the chisel-wrapper binary.
+	      By default, it will look for "chisel-wrapper" in PATH.
+	EOF
+}
+
+cleanup() {
+    mv $ROOTFS/usr/share/rocks/dpkg.query ./dpkg.query
+	rm -rf $ROOTFS
+}
+
+print_error() {
+	echo "Error:" "$@" >&2
+}
+
+format_status() {
+    awk '
+    BEGIN { RS="\n\n"; FS="\n" }
+    {
+        status=""; package=""; version=""; source=""; source_version="";
+        
+        for (i=1; i<=NF; i++) {
+        if ($i ~ /^Status:/) {
+            split($i, arr, " ");  # Extract "ii" or equivalent
+            status = substr(arr[2],1,1) substr(arr[3],1,1); 
+        }
+        if ($i ~ /^Package:/) package=$i;
+        if ($i ~ /^Version:/) version=$i;
+        if ($i ~ /^Source:/) {
+            split($i, arr, " ");
+            source=arr[2];
+            if (length(arr) > 2) source_version=arr[3];
+        }
+        }
+
+        # Clean field values
+        gsub(/^Status: /, "", status);
+        gsub(/^Package: /, "", package);
+        gsub(/^Version: /, "", version);
+        gsub(/^Source: /, "", source);
+
+        # Default source to package if Source field is missing
+        if (source == "") { source = package; source_version = version; }
+
+        # Print formatted output like dpkg-query
+        printf "%s,%s,%s,%s,%s\n", status, package, version, source, source_version;
+    }
+    ' $ROOTFS/var/lib/dpkg/status
+}
+
+create_manifest() {
+    echo "Creating security manifest"
+    mkdir -p $ROOTFS/usr/share/rocks
+
+    if [ -f $ROOTFS/etc/os-release ]; then
+        (echo "# os-release" && cat $ROOTFS/etc/os-release) >> $ROOTFS/usr/share/rocks/dpkg.query
+    fi
+    (echo "# dpkg-query" && format_status) >> $ROOTFS/usr/share/rocks/dpkg.query
+}
+
+while (( "$#" )); do
+	case "$1" in
+        --rootfs)
+			if (( "$#" < 2 )); then
+				print_error "Please specify the desired path of the chisel rootfs."
+				exit 1
+            fi
+			ROOTFS="$2"
+			shift 2
+			;;
+		--cleanup)
+            CLEANUP=1
+			shift
+			;;
+		-h|--help)
+			print_usage
+			exit 0
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			echo "Unknown option: $1"
+			exit 1
+			;;
+		*)
+			echo "Unexpected argument: $1"
+			exit 1
+			;;
+	esac
+done
+
+if [ -z $ROOTFS/ ]; then
+    print_error "Missing root fs for chisel"
+    exit 1
+fi
+
+mkdir -p $ROOTFS/var/lib/dpkg
+$WRAPPER_BIN --generate-dpkg-status $ROOTFS/var/lib/dpkg/status -- --root $ROOTFS "$@" && create_manifest
+
+if [ $CLEANUP -eq 1 ]; then
+    if [[ $(realpath $ROOTFS) == $PWD ]]; then
+        print_error Cannot clean PWD
+        exit 1
+    fi
+    cleanup
+fi
