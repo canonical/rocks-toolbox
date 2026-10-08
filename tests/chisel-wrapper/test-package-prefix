@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Exercise chisel-wrapper's package replacement logic with fake .deb files.
+# The fixtures make cache iteration order explicit and need no chisel install.
+set -eu
+
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+MOCK_BIN="$(mktemp -d)"
+STATUS_FILE="$MOCK_BIN/status"
+trap 'rm -rf "$MOCK_BIN"' EXIT
+
+cat > "$MOCK_BIN/chisel" <<'EOF'
+#!/bin/sh
+mkdir -p "$XDG_CACHE_HOME/chisel/sha256"
+touch "$XDG_CACHE_HOME/chisel/sha256/a.deb"
+touch "$XDG_CACHE_HOME/chisel/sha256/b.deb"
+EOF
+
+cat > "$MOCK_BIN/file" <<'EOF'
+#!/bin/sh
+printf '%s: Debian binary package, version 2.0\n' "$1"
+EOF
+
+cat > "$MOCK_BIN/dpkg-deb" <<'EOF'
+#!/bin/sh
+case "$2" in
+    */a.deb) pkg="$PKG_A" ;;
+    */b.deb) pkg="$PKG_B" ;;
+    *) exit 1 ;;
+esac
+
+if [ "$#" -eq 3 ]; then
+    printf '%s\n' "$pkg"
+else
+    printf 'Package: %s\nStatus: install ok installed\nVersion: 1.0\n' "$pkg"
+fi
+EOF
+chmod +x "$MOCK_BIN/chisel" "$MOCK_BIN/file" "$MOCK_BIN/dpkg-deb"
+
+for package_pair in "openssl openssl-provider-legacy" \
+                    "libssl1.1 libssl1.1-provider-legacy"; do
+    set -- $package_pair
+    short_name="$1"
+    long_name="$2"
+
+    for order in "$short_name $long_name" "$long_name $short_name"; do
+        set -- $order
+        : > "$STATUS_FILE"
+        PATH="$MOCK_BIN:$PATH" \
+            CHISEL_BIN="$MOCK_BIN/chisel" PKG_A="$1" PKG_B="$2" \
+            "$REPO_ROOT/chisel-wrapper" \
+            --generate-dpkg-status "$STATUS_FILE" --
+        grep -Fqx "Package: $short_name" "$STATUS_FILE"
+        grep -Fqx "Package: $long_name" "$STATUS_FILE"
+    done
+done
