@@ -40,3 +40,5 @@ check_syft "base-files\nlibc6\nlibssl3t64\nopenssl\nzlib1g"
 install libc6_libs      # no new package
 place_status
 check_syft "base-files\nlibc6\nlibssl3t64\nopenssl\nzlib1g"
+
+./tests/chisel-wrapper/test-package-prefix
