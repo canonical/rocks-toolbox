@@ -90,30 +90,23 @@ install_slices() {
 
 prepare_dpkg_status() {
 	# Chisel cache blobs are located at <cache-dir>/chisel/<digest-kind>/
-	# directories; the archive index decides which digest kind is used.
+	# directories, e.g. sha256/ or sha512/, depending on the archive index.
 	dir="$CHISEL_CACHE_DIR/chisel"
 	if [ ! -d "$dir" ]; then
 		print_error "could not find the chisel cache at ${dir}"
 		exit 1
 	fi
 
-	# Go over each file in the cache blob directories and figure out which
-	# files are .debs i.e. Debian binary package. For each of those files, parse
-	# the control file and append it to the dpkg status file we are creating
-	# since a dpkg status file is simply a concatenation of control files of
-	# .debs. The digest kinds are the ones chisel can write, see
-	# internal/cache/cache.go in canonical/chisel.
-	for kind in sha256 sha384 sha512; do
-		if [ ! -d "$dir/$kind" ]; then
+	# Go over each file in the cache blob directory and figure out which files
+	# are .debs i.e. Debian binary package. For each of those files, parse the
+	# control file and append it to the dpkg status file we are creating since
+	# a dpkg status file is simply a concatenation of control files of .debs.
+	for f in "$dir"/sha*/*; do
+		is_deb="$(file "$f" | grep "Debian binary package" | cat)"
+		if [ -z "$is_deb" ]; then
 			continue
 		fi
-		for f in "$dir/$kind"/*; do
-			is_deb="$(file "$f" | grep "Debian binary package" | cat)"
-			if [ -z "$is_deb" ]; then
-				continue
-			fi
-			write_control_file "$f"
-		done
+		write_control_file "$f"
 	done
 }
 
