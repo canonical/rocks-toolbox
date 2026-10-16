@@ -97,10 +97,6 @@ prepare_dpkg_status() {
 		exit 1
 	fi
 
-	# DEBUG: temporary, drop before merge.
-	ls -laR "$dir" >&2
-	file "$dir"/sha*/* >&2 || true
-
 	# Go over each file in the cache blob directory and figure out which files
 	# are .debs i.e. Debian binary package. For each of those files, parse the
 	# control file and append it to the dpkg status file we are creating since
