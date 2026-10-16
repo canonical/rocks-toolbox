@@ -89,9 +89,8 @@ install_slices() {
 }
 
 prepare_dpkg_status() {
-	# Chisel cache blobs are located at <cache-dir>/chisel/<digest-kind>/
-	# directories, e.g. sha256/ or sha512/, depending on the archive index.
-	dir="$CHISEL_CACHE_DIR/chisel"
+	# Chisel cache blobs are located at <cache-dir>/chisel/sha256/ directory.
+	dir="$CHISEL_CACHE_DIR/chisel/sha256"
 	if [ ! -d "$dir" ]; then
 		print_error "could not find the chisel cache at ${dir}"
 		exit 1
@@ -101,7 +100,7 @@ prepare_dpkg_status() {
 	# are .debs i.e. Debian binary package. For each of those files, parse the
 	# control file and append it to the dpkg status file we are creating since
 	# a dpkg status file is simply a concatenation of control files of .debs.
-	for f in "$dir"/sha*/*; do
+	for f in "$dir"/*; do
 		is_deb="$(file "$f" | grep "Debian binary package" | cat)"
 		if [ -z "$is_deb" ]; then
 			continue
@@ -128,7 +127,7 @@ write_control_file() {
 		# So we match everything from "Package: foo" (inclusive) up to the first
 		# blank line we see, and then just delete those lines.
 		pkg="$(dpkg-deb -f "$f" Package)"
-		sed "/^Package:\s*${pkg//./\\.}\s*$/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
+		sed "/Package:\s*$pkg/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
 	fi
 
 	# Append the control info to the dpkg status file.  Additionally, append a
