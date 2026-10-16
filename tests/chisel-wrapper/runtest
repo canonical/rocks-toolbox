@@ -9,7 +9,7 @@ ROOTFS="$(mktemp -d)"
 
 install() {
     ./chisel-wrapper --generate-dpkg-status "$STATUS_FILE" -- \
-        --release ubuntu-20.04 --root "$ROOTFS" \
+        --release ubuntu-24.04 --root "$ROOTFS" \
         "$@"
 }
 
@@ -29,14 +29,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-install openssl_bins    # 3 new packages
+install openssl_bins    # 4 new packages
 place_status
-check_syft "libc6\nlibssl1.1\nopenssl"
+check_syft "base-files\nlibc6\nlibssl3t64\nopenssl"
 
-install base-files_base # 1 more package
+install zlib1g_libs     # 1 more package
 place_status
-check_syft "base-files\nlibc6\nlibssl1.1\nopenssl"
+check_syft "base-files\nlibc6\nlibssl3t64\nopenssl\nzlib1g"
 
 install libc6_libs      # no new package
 place_status
-check_syft "base-files\nlibc6\nlibssl1.1\nopenssl"
+check_syft "base-files\nlibc6\nlibssl3t64\nopenssl\nzlib1g"
