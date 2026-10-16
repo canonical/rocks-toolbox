@@ -4,6 +4,11 @@
 
 set -eux
 
+# DEBUG: temporary, drop before merge.
+file --version
+syft version
+chisel version
+
 STATUS_FILE="$(mktemp)"
 ROOTFS="$(mktemp -d)"
 
@@ -20,6 +25,9 @@ place_status() {
 
 check_syft() {
     local match="$1"
+    # DEBUG: temporary, drop before merge.
+    cat "$ROOTFS/var/lib/dpkg/status"
+    syft "$ROOTFS" -o syft-table || true
     syft "$ROOTFS" -o syft-table -q | grep deb | cut -d' ' -f1  | \
         grep -Pz "$match"
 }
