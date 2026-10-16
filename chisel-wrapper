@@ -128,7 +128,7 @@ write_control_file() {
 		# So we match everything from "Package: foo" (inclusive) up to the first
 		# blank line we see, and then just delete those lines.
 		pkg="$(dpkg-deb -f "$f" Package)"
-		sed "/Package:\s*$pkg/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
+		sed "/^Package:\s*${pkg//./\\.}\s*$/,/^\s*$/d" -i "$CHISEL_DPKG_STATUS_FILE"
 	fi
 
 	# Append the control info to the dpkg status file.  Additionally, append a
