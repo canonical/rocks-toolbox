@@ -11,13 +11,15 @@ trap 'rm -rf "$MOCK_BIN"' EXIT
 
 cat > "$MOCK_BIN/chisel" <<'EOF'
 #!/bin/sh
-mkdir -p "$XDG_CACHE_HOME/chisel/sha256"
-touch "$XDG_CACHE_HOME/chisel/sha256/a.deb"
-touch "$XDG_CACHE_HOME/chisel/sha256/b.deb"
+mkdir -p "$XDG_CACHE_HOME/chisel/$CACHE_DIGEST"
+touch "$XDG_CACHE_HOME/chisel/$CACHE_DIGEST/a.deb"
+touch "$XDG_CACHE_HOME/chisel/$CACHE_DIGEST/b.deb"
 EOF
 
 cat > "$MOCK_BIN/file" <<'EOF'
 #!/bin/sh
+# Unmatched cache globs must not be reported as Debian packages.
+[ -f "$1" ] || exit 1
 printf '%s: Debian binary package, version 2.0\n' "$1"
 EOF
 
@@ -37,20 +39,24 @@ fi
 EOF
 chmod +x "$MOCK_BIN/chisel" "$MOCK_BIN/file" "$MOCK_BIN/dpkg-deb"
 
-for package_pair in "openssl openssl-provider-legacy" \
-                    "libssl1.1 libssl1.1-provider-legacy"; do
-    set -- $package_pair
-    short_name="$1"
-    long_name="$2"
+# Exercise either cache directory while the other directory is absent.
+for cache_digest in sha256 sha512; do
+    for package_pair in "openssl openssl-provider-legacy" \
+                        "libssl1.1 libssl1.1-provider-legacy"; do
+        set -- $package_pair
+        short_name="$1"
+        long_name="$2"
 
-    for order in "$short_name $long_name" "$long_name $short_name"; do
-        set -- $order
-        : > "$STATUS_FILE"
-        PATH="$MOCK_BIN:$PATH" \
-            CHISEL_BIN="$MOCK_BIN/chisel" PKG_A="$1" PKG_B="$2" \
-            "$REPO_ROOT/chisel-wrapper" \
-            --generate-dpkg-status "$STATUS_FILE" --
-        grep -Fqx "Package: $short_name" "$STATUS_FILE"
-        grep -Fqx "Package: $long_name" "$STATUS_FILE"
+        for order in "$short_name $long_name" "$long_name $short_name"; do
+            set -- $order
+            : > "$STATUS_FILE"
+            PATH="$MOCK_BIN:$PATH" \
+                CHISEL_BIN="$MOCK_BIN/chisel" CACHE_DIGEST="$cache_digest" \
+                PKG_A="$1" PKG_B="$2" \
+                "$REPO_ROOT/chisel-wrapper" \
+                --generate-dpkg-status "$STATUS_FILE" --
+            grep -Fqx "Package: $short_name" "$STATUS_FILE"
+            grep -Fqx "Package: $long_name" "$STATUS_FILE"
+        done
     done
 done
