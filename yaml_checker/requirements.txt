@@ -1,0 +1,2 @@
+pydantic==2.8.2
+ruamel.yaml==0.18.6
